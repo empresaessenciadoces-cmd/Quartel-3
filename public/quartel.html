@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0e13" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Quartel" />
+<link rel="manifest" href='data:application/manifest+json,{"name":"Quartel General","short_name":"Quartel","display":"standalone","background_color":"%230a0e13","theme_color":"%230a0e13","start_url":"."}' />
+<title>Quartel General — Comando Pessoal</title>
+<style>
+  :root {
+    --bg: #0a0e13;
+    --panel: #111821;
+    --panel-2: #172130;
+    --line: #23324a;
+    --text: #e6edf5;
+    --muted: #7d8ca3;
+    --gold: #f2b53a;
+    --cyan: #34d4b1;
+    --red: #ef5b5b;
+    --radius: 14px;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 50% -200px, rgba(52,212,177,0.08), transparent 70%),
+      linear-gradient(transparent 0 calc(100% - 1px), rgba(35,50,74,0.35) 0) 0 0 / 100% 28px,
+      linear-gradient(90deg, transparent 0 calc(100% - 1px), rgba(35,50,74,0.35) 0) 0 0 / 28px 100%,
+      var(--bg);
+    color: var(--text);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+  /* HUD */
+  .hud { position: sticky; top: 0; z-index: 5; padding: calc(14px + env(safe-area-inset-top)) 16px 12px; background: rgba(10,14,19,0.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .hud-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .brand { font-family: var(--mono); font-size: 12px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; }
+  .brand b { color: var(--cyan); font-weight: 600; }
+  .streak { font-family: var(--mono); font-size: 12px; color: var(--gold); border: 1px solid rgba(242,181,58,0.35); padding: 3px 8px; border-radius: 999px; }
+  .resources { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .res { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; position: relative; overflow: hidden; }
+  .res::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .res.money::before { background: var(--cyan); }
+  .res.pa::before { background: var(--gold); }
+  .res-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .res-value { font-family: var(--mono); font-size: 20px; font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .res.money .res-value { color: var(--cyan); }
+  .res.pa .res-value { color: var(--gold); }
+  .bump { animation: bump 0.6s ease; }
+  @keyframes bump { 0% { transform: scale(1); } 30% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+  main { padding: 18px 16px; flex: 1; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade 0.25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .panel-head { margin-bottom: 16px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 24px; margin: 2px 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+
+  /* Moedor */
+  .timer-wrap { display: flex; flex-direction: column; align-items: center; padding: 22px 16px; }
+  .ring { position: relative; width: 240px; height: 240px; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 10; }
+  .ring .track { stroke: var(--panel-2); }
+  .ring .prog { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset 0.5s linear; }
+  .ring .ticks { stroke: var(--line); stroke-width: 2; stroke-dasharray: 2 14.7; }
+  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 40px; text-align: center; }
+  .time { font-family: var(--mono); font-size: 52px; font-weight: 600; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+  .status { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .status.on { color: var(--gold); }
+  .status.done { color: var(--cyan); }
+  .ring-target { font-size: 12px; color: var(--muted); margin-top: 6px; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .target-card { border-style: dashed; }
+  .target-info { margin-top: 12px; }
+  .target-mission { background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 12px; }
+  .target-mission h3 { margin: 4px 0 6px; font-size: 16px; word-break: break-word; }
+  .next-step { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .next-step .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+  .next-step p { margin: 2px 0 0; font-size: 14px; word-break: break-word; }
+
+  .btn { appearance: none; border: 0; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; min-height: 52px; padding: 0 18px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.08s ease, filter 0.15s ease, background 0.15s ease; touch-action: manipulation; text-decoration: none; }
+  .btn:active:not(:disabled) { transform: scale(0.98); }
+  .btn:focus-visible, .icon-btn:focus-visible, .chip:focus-visible, .zchip:focus-visible, .seg button:focus-visible, .tab:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .btn-gold { background: var(--gold); color: #1a1205; box-shadow: 0 6px 24px -8px rgba(242,181,58,0.6); }
+  .btn-cyan { background: var(--cyan); color: #04201a; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(239,91,91,0.45); }
+  .btn:disabled { background: #2a323d; color: #6b7685; box-shadow: none; cursor: not-allowed; border-color: transparent; }
+  .btn-xl { min-height: 64px; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 22px; }
+  .btn-sm { min-height: 44px; font-size: 14px; padding: 0 12px; width: auto; }
+  .actions { width: 100%; }
+  .actions .btn + .btn { margin-top: 10px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; text-align: center; }
+  .stat b { display: block; font-family: var(--mono); font-size: 20px; }
+  .stat span { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* Forms */
+  label { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .field { margin-bottom: 12px; }
+  input, select, textarea { width: 100%; min-height: 52px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; color: var(--text); font: inherit; font-size: 17px; padding: 0 14px; }
+  select { appearance: none; padding-right: 40px; font-size: 16px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237d8ca3' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+  select:disabled { opacity: 0.55; }
+  textarea { padding: 12px 14px; min-height: 96px; resize: vertical; font-size: 16px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(52,212,177,0.15); }
+  input:disabled { opacity: 0.6; }
+  input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; margin: 0; accent-color: var(--cyan); flex: none; }
+  .input-prefix { position: relative; }
+  .input-prefix span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-family: var(--mono); pointer-events: none; }
+  .input-prefix input { padding-left: 46px; font-family: var(--mono); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .balance-big { text-align: center; padding: 24px 16px; }
+  .balance-big .res-label { margin-bottom: 4px; }
+  .balance-big .amount { font-family: var(--mono); font-size: 40px; font-weight: 600; color: var(--cyan); word-break: break-all; }
+  .balance-big .amount.neg { color: var(--red); }
+  .alloc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; text-align: left; }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { flex: 1; min-height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-family: var(--mono); font-size: 14px; cursor: pointer; }
+  .chip:active { transform: scale(0.97); }
+
+  .log { list-style: none; margin: 0; padding: 0; }
+  .log li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; gap: 10px; }
+  .log li:last-child { border-bottom: 0; }
+  .log .when { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .log .val { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+  .val.plus { color: var(--cyan); }
+  .val.minus { color: var(--red); }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 14px 0; margin: 0; }
+  .section-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 500; }
+  .section-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .section-row .section-title { margin: 0; }
+  .tag-mono { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* Vitrine */
+  .loot { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; position: relative; }
+  .loot.ready { border-color: rgba(242,181,58,0.6); box-shadow: 0 0 0 1px rgba(242,181,58,0.15), 0 10px 30px -18px rgba(242,181,58,0.7); }
+  .loot.won { border-color: rgba(52,212,177,0.45); background: linear-gradient(180deg, rgba(52,212,177,0.07), var(--panel)); }
+  .loot-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .loot-name { font-weight: 600; font-size: 17px; margin: 0; word-break: break-word; }
+  .badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; display: inline-block; }
+  .badge.locked { color: var(--muted); border: 1px solid var(--line); }
+  .badge.ready { color: var(--gold); border: 1px solid rgba(242,181,58,0.5); }
+  .badge.won { color: #04201a; background: var(--cyan); }
+  .badge.cyan { color: var(--cyan); border: 1px solid rgba(52,212,177,0.45); }
+  .costs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .cost { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .cost .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+  .cost .v { font-family: var(--mono); font-weight: 600; font-size: 15px; word-break: break-all; }
+  .cost.miss .v { color: var(--red); }
+  .bar { height: 4px; background: var(--panel-2); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .cost.money .bar i { background: var(--cyan); }
+  .cost.pa .bar i { background: var(--gold); }
+  .loot-actions { display: grid; grid-template-columns: 1fr 52px; gap: 8px; }
+  .icon-btn { min-height: 52px; min-width: 52px; border-radius: 12px; background: transparent; border: 1px solid var(--line); color: var(--muted); cursor: pointer; display: grid; place-items: center; font: inherit; font-size: 20px; }
+  .icon-btn:active:not(:disabled) { transform: scale(0.97); }
+  .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .won-date { font-family: var(--mono); font-size: 12px; color: var(--cyan); align-self: center; }
+  .hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  .link-btn { appearance: none; background: none; border: 0; color: var(--cyan); font: inherit; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; padding: 10px 0 0; cursor: pointer; min-height: 36px; text-align: left; }
+  .goal-link { color: var(--cyan); font-family: var(--mono); font-size: 12px; margin: 10px 0 0; }
+
+  details.add > summary { list-style: none; cursor: pointer; }
+  details.add > summary::-webkit-details-marker { display: none; }
+  details.add[open] > summary { margin-bottom: 14px; }
+
+  /* Metas */
+  .goal { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .goal.full { border-color: rgba(52,212,177,0.5); }
+  .goal-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .goal-name { font-weight: 600; word-break: break-word; }
+  .rank { font-family: var(--mono); font-size: 11px; color: var(--gold); margin-right: 6px; }
+  .pct { font-family: var(--mono); font-weight: 600; color: var(--cyan); }
+  .gbar { height: 10px; background: var(--panel-2); border-radius: 6px; margin: 10px 0 6px; overflow: hidden; position: relative; }
+  .gbar i { display: block; height: 100%; background: linear-gradient(90deg, rgba(52,212,177,0.6), var(--cyan)); border-radius: 6px; transition: width 0.5s ease; }
+  .gbar.pa { height: 6px; margin-top: 4px; }
+  .gbar.pa i { background: var(--gold); }
+  .goal-meta { display: flex; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .goal-meta .ok { color: var(--cyan); }
+  .goal-actions { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; margin-top: 10px; }
+  .goal-actions .icon-btn { min-height: 44px; min-width: 44px; }
+  .goal.done-goal { opacity: 0.75; }
+
+  /* Missões */
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .seg button { appearance: none; border: 0; background: transparent; color: var(--muted); border-radius: 9px; min-height: 48px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1.15; }
+  .seg button b { font-size: 16px; color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); }
+  .seg button[aria-pressed="true"][data-col="0"] { box-shadow: inset 0 -2px 0 var(--muted); }
+  .seg button[aria-pressed="true"][data-col="1"] { box-shadow: inset 0 -2px 0 var(--gold); }
+  .seg button[aria-pressed="true"][data-col="2"] { box-shadow: inset 0 -2px 0 var(--cyan); }
+  .zone-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+  .zone-chips::-webkit-scrollbar { display: none; }
+  .zchip { flex: none; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .zchip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .mission { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+  .mission.c1 { border-left-color: var(--gold); }
+  .mission.c2 { border-left-color: var(--cyan); }
+  .mission.targeted { box-shadow: 0 0 0 1px rgba(242,181,58,0.35), 0 10px 30px -18px rgba(242,181,58,0.7); }
+  .m-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .zone { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); padding: 3px 8px; border-radius: 6px; }
+  .m-title { margin: 8px 0 8px; font-size: 17px; word-break: break-word; }
+  .mission.c2 .m-title { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(125,140,163,0.5); }
+  .m-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .m-meta .focus { color: var(--gold); }
+  .mission .bar i { background: var(--muted); }
+  .mission.c1 .bar i { background: var(--gold); }
+  .mission.c2 .bar i { background: var(--cyan); }
+  .next { font-size: 13px; color: var(--text); margin: 10px 0 0; }
+  .next span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-right: 6px; }
+  .m-details { margin-top: 10px; border-top: 1px dashed var(--line); }
+  .m-details > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .m-details > summary::-webkit-details-marker { display: none; }
+  .m-details > summary::after { content: "+"; font-size: 18px; color: var(--muted); }
+  .m-details[open] > summary::after { content: "−"; }
+  .checklist { list-style: none; margin: 0 0 8px; padding: 0; }
+  .checklist li { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgba(35,50,74,0.6); }
+  .check { flex: 1; display: flex; align-items: center; gap: 12px; min-height: 48px; margin: 0; font-family: inherit; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--text); cursor: pointer; word-break: break-word; padding: 4px 0; }
+  .check.is-done span { color: var(--muted); text-decoration: line-through; }
+  .mini-x { appearance: none; background: none; border: 0; color: var(--muted); width: 40px; height: 40px; font-size: 20px; cursor: pointer; border-radius: 8px; flex: none; }
+  .mini-x:active { background: var(--panel-2); }
+  .addsub { display: grid; grid-template-columns: 1fr 52px; gap: 8px; margin: 8px 0 4px; }
+  .addsub input { min-height: 48px; font-size: 15px; }
+  .addsub .btn { min-height: 48px; padding: 0; font-size: 22px; }
+  .m-actions { display: grid; grid-template-columns: 52px 1fr 52px 52px; gap: 8px; margin-top: 12px; }
+  .m-actions .btn { min-height: 52px; font-size: 15px; padding: 0 10px; }
+  .m-actions .won-date { text-align: center; }
+
+  /* Nav */
+  nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: rgba(10,14,19,0.94); backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  .tabs-inner { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+  .tab { appearance: none; background: none; border: 0; color: var(--muted); font: inherit; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; position: relative; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 0 2px; }
+  .tab svg { width: 22px; height: 22px; }
+  .tab[aria-selected="true"] { color: var(--text); }
+  .tab[aria-selected="true"]::before { content: ""; position: absolute; top: 0; left: 24%; right: 24%; height: 2px; background: var(--cyan); border-radius: 2px; }
+  .tab .dot { position: absolute; top: 12px; right: calc(50% - 18px); width: 8px; height: 8px; border-radius: 50%; background: var(--gold); display: none; }
+  .tab .dot.show { display: block; }
+
+  /* Toast */
+  .toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 12px 16px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 20; max-width: calc(100% - 32px); text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.gold { border-color: rgba(242,181,58,0.6); color: var(--gold); }
+  .toast.cyan { border-color: rgba(52,212,177,0.6); color: var(--cyan); }
+  .toast.red { border-color: rgba(239,91,91,0.6); color: var(--red); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hud">
+    <div class="hud-top">
+      <div class="brand">Quartel <b>General</b></div>
+      <div class="streak" id="streak" aria-label="Sequência de dias">Sequência 0d</div>
+    </div>
+    <div class="resources" role="status" aria-live="polite">
+      <div class="res money">
+        <div class="res-label">Tesouro</div>
+        <div class="res-value" id="hudMoney">R$ 0,00</div>
+      </div>
+      <div class="res pa">
+        <div class="res-label">Pontos de Ação</div>
+        <div class="res-value" id="hudPa">0 PA</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- MOEDOR -->
+    <section class="panel active" id="panel-moedor" role="tabpanel" aria-labelledby="tab-moedor">
+      <div class="panel-head">
+        <div class="eyebrow">Setor 01 · Mapa do Território</div>
+        <h1>O Moedor</h1>
+        <p class="sub">5 minutos de foco total. Conclua a missão e conquiste +1 PA.</p>
+      </div>
+
+      <div class="card target-card">
+        <label for="targetSelect">Alvo da operação</label>
+        <select id="targetSelect"></select>
+        <div class="target-info" id="targetInfo"></div>
+      </div>
+
+      <div class="card timer-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ticks" cx="60" cy="60" r="56"></circle>
+            <circle class="track" cx="60" cy="60" r="48"></circle>
+            <circle class="prog" id="ringProg" cx="60" cy="60" r="48"></circle>
+          </svg>
+          <div class="ring-center">
+            <div class="time" id="timeText" aria-live="off">05:00</div>
+            <div class="status" id="timerStatus">Pronto</div>
+            <div class="ring-target" id="ringTarget">Foco livre</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-gold btn-xl" id="startBtn" type="button">Iniciar Missão</button>
+          <button class="btn btn-danger" id="abortBtn" type="button" hidden>Abortar missão</button>
+        </div>
+        <p class="hint" id="timerHint">Disponível 1 vez por dia.</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b id="statSessions">0</b><span>Missões</span></div>
+        <div class="stat"><b id="statStreak">0</b><span>Sequência</span></div>
+        <div class="stat"><b id="statBest">0</b><span>Recorde</span></div>
+      </div>
+    </section>
+
+    <!-- MISSÕES -->
+    <section class="panel" id="panel-missoes" role="tabpanel" aria-labelledby="tab-missoes">
+      <div class="panel-head">
+        <div class="eyebrow">Setor 02 · Quadro de Operações</div>
+        <h1>Missões</h1>
+        <p class="sub">Quebre cada missão em micropassos de 5 minutos e mova pelo quadro.</p>
+      </div>
+
+      <details class="card add" id="missionDetails">
+        <summary class="btn btn-ghost">+ Nova missão</summary>
+        <form id="missionForm" novalidate>
+          <div class="field">
+            <label for="mTitle">Missão</label>
+            <input id="mTitle" maxlength="80" placeholder="Ex: Organizar a cozinha" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="mZone">Zona</label>
+            <input id="mZone" maxlength="30" placeholder="Ex: Cozinha" list="zoneList" autocomplete="off" />
+            <datalist id="zoneList"></datalist>
+          </div>
+          <div class="field">
+            <label for="mSubs">Micropassos (um por linha)</label>
+            <textarea id="mSubs" placeholder="Lavar a louça da pia&#10;Limpar o fogão&#10;Tirar o lixo"></textarea>
+          </div>
+          <button type="submit" class="btn btn-gold">Lançar no quadro</button>
+        </form>
+      </details>
+
+      <div class="seg" role="group" aria-label="Colunas do quadro" id="seg">
+        <button type="button" data-col="0" aria-pressed="true"><b id="cnt0">0</b>A Fazer</button>
+        <button type="button" data-col="1" aria-pressed="false"><b id="cnt1">0</b>Em Andamento</button>
+        <button type="button" data-col="2" aria-pressed="false"><b id="cnt2">0</b>Concluído</button>
+      </div>
+
+      <div class="zone-chips" id="zoneChips" role="group" aria-label="Filtrar por zona"></div>
+
+      <div id="missionList"></div>
+    </section>
+
+    <!-- COFRE -->
+    <section class="panel" id="panel-cofre" role="tabpanel" aria-labelledby="tab-cofre">
+      <div class="panel-head">
+        <div class="eyebrow">Setor 03 · Radar Financeiro</div>
+        <h1>O Cofre</h1>
+        <p class="sub">Registre entradas e saídas e acompanhe suas metas.</p>
+      </div>
+
+      <div class="card balance-big">
+        <div class="res-label">Saldo total</div>
+        <div class="amount" id="bigBalance">R$ 0,00</div>
+        <div class="alloc">
+          <div class="cost"><div class="k">Em metas</div><div class="v" id="allocGoals">R$ 0,00</div></div>
+          <div class="cost"><div class="k">Livre</div><div class="v" id="allocFree">R$ 0,00</div></div>
+        </div>
+      </div>
+
+      <form class="card" id="moneyForm" novalidate>
+        <div class="field">
+          <label for="moneyInput">Valor</label>
+          <div class="input-prefix">
+            <span>R$</span>
+            <input id="moneyInput" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+          </div>
+        </div>
+        <div class="chips" aria-label="Valores rápidos">
+          <button type="button" class="chip" data-quick="10">10</button>
+          <button type="button" class="chip" data-quick="50">50</button>
+          <button type="button" class="chip" data-quick="100">100</button>
+          <button type="button" class="chip" data-quick="500">500</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn btn-danger" id="subBtn">− Retirar</button>
+          <button type="button" class="btn btn-cyan" id="addBtn">+ Depositar</button>
+        </div>
+      </form>
+
+      <div class="card">
+        <div class="section-row">
+          <h2 class="section-title">Metas financeiras</h2>
+          <span class="tag-mono" id="goalCount">0 ativas</span>
+        </div>
+        <div id="goalList"></div>
+        <details class="add" id="goalDetails">
+          <summary class="btn btn-ghost">+ Nova meta</summary>
+          <form id="goalForm" novalidate>
+            <div class="field">
+              <label for="goalLoot">Vincular à Vitrine</label>
+              <select id="goalLoot"></select>
+            </div>
+            <div class="field">
+              <label for="goalName">Nome da meta</label>
+              <input id="goalName" maxlength="60" placeholder="Ex: Reserva de emergência" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="goalTarget">Valor alvo</label>
+              <div class="input-prefix">
+                <span>R$</span>
+                <input id="goalTarget" inputmode="decimal" placeholder="0,00" autocomplete="off" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-cyan">Criar meta</button>
+          </form>
+        </details>
+        <p class="hint">O saldo é distribuído em cascata: a meta #1 é abastecida primeiro. Use ↑ para mudar a prioridade.</p>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Registro de operações</h2>
+        <ul class="log" id="moneyLog"></ul>
+      </div>
+    </section>
+
+    <!-- VITRINE -->
+    <section class="panel" id="panel-vitrine" role="tabpanel" aria-labelledby="tab-vitrine">
+      <div class="panel-head">
+        <div class="eyebrow">Setor 04 · Loot</div>
+        <h1>A Vitrine</h1>
+        <p class="sub">Recompensas exigem tesouro <em>e</em> pontos de ação.</p>
+      </div>
+
+      <details class="card add" id="addDetails">
+        <summary class="btn btn-ghost">+ Nova recompensa</summary>
+        <form id="lootForm" novalidate>
+          <div class="field">
+            <label for="lootName">Nome</label>
+            <input id="lootName" maxlength="60" placeholder="Ex: Viagem Gravatá" autocomplete="off" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="lootMoney">Custo R$</label>
+              <input id="lootMoney" inputmode="decimal" placeholder="0,00" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="lootPa">Custo PA</label>
+              <input id="lootPa" inputmode="numeric" placeholder="0" autocomplete="off" />
+            </div>
+          </div>
+          <label class="check" style="min-height:44px;margin-bottom:12px">
+            <input type="checkbox" id="lootAsGoal" checked />
+            <span>Criar meta no Cofre automaticamente</span>
+          </label>
+          <button type="submit" class="btn btn-gold">Cadastrar na vitrine</button>
+        </form>
+      </details>
+
+      <h2 class="section-title">Disponíveis</h2>
+      <div id="lootList"></div>
+      <h2 class="section-title" id="wonTitle" hidden>Conquistados</h2>
+      <div id="wonList"></div>
+    </section>
+
+    <!-- DADOS -->
+    <section class="panel" id="panel-dados" role="tabpanel" aria-labelledby="tab-dados">
+      <div class="panel-head">
+        <div class="eyebrow">Setor 05 · Inteligência</div>
+        <h1>Dados</h1>
+        <p class="sub">Relatório de campanha e backup do seu progresso.</p>
+      </div>
+
+      <div class="stats" id="dataStats"></div>
+
+      <div class="card">
+        <h2 class="section-title">Exportar backup</h2>
+        <p class="hint" style="margin:0 0 12px">Todos os dados ficam salvos neste navegador. Faça backups periódicos.</p>
+        <div class="row">
+          <button type="button" class="btn btn-ghost" id="copyBackup">Copiar</button>
+          <button type="button" class="btn btn-cyan" id="downloadBackup">Baixar .json</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title"><label for="importArea" style="margin:0">Restaurar backup</label></h2>
+        <textarea id="importArea" placeholder="Cole aqui o conteúdo do backup (JSON)"></textarea>
+        <button type="button" class="btn btn-gold" id="importBtn" style="margin-top:10px">Restaurar</button>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Zona de perigo</h2>
+        <button type="button" class="btn btn-danger" id="resetBtn">Zerar todo o progresso</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabs" aria-label="Painéis">
+  <div class="tabs-inner" role="tablist">
+    <button class="tab" role="tab" id="tab-moedor" aria-controls="panel-moedor" aria-selected="true" data-tab="moedor">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+      Moedor<span class="dot" id="dotMoedor"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-missoes" aria-controls="panel-missoes" aria-selected="false" data-tab="missoes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>
+      Missões<span class="dot" id="dotMissoes"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-cofre" aria-controls="panel-cofre" aria-selected="false" data-tab="cofre">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M12 9v1M12 15v1M6 20v1.5M18 20v1.5"/></svg>
+      Cofre
+    </button>
+    <button class="tab" role="tab" id="tab-vitrine" aria-controls="panel-vitrine" aria-selected="false" data-tab="vitrine">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg>
+      Vitrine<span class="dot" id="dotVitrine"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-dados" aria-controls="panel-dados" aria-selected="false" data-tab="dados">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="2.5"/><path d="M4 5.5v6c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-6M4 11.5v6c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-6"/></svg>
+      Dados
+    </button>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="assertive"></div>
+
+<script>
+(() => {
+  const KEY = "qg-state-v1";
+  const DURATION = 5 * 60 * 1000;
+  const CIRC = 2 * Math.PI * 48;
+  const COLS = ["A Fazer", "Em Andamento", "Concluído"];
+  const DEFAULT_ZONES = ["Cozinha", "Sala", "Quarto", "Banheiro", "Lavanderia", "Escritório", "Garagem"];
+
+  const defaults = {
+    money: 0,
+    pa: 0,
+    timer: { endsAt: null, lastDoneDate: null, sessions: 0, streak: 0, best: 0, targetId: null },
+    moneyLog: [],
+    loot: [],
+    missions: [],
+    goals: []
+  };
+
+  function hydrate(raw) {
+    if (!raw || typeof raw !== "object") return structuredClone(defaults);
+    return { ...structuredClone(defaults), ...raw, timer: { ...defaults.timer, ...(raw.timer || {}) } };
+  }
+  function load() {
+    try { return hydrate(JSON.parse(localStorage.getItem(KEY))); }
+    catch { return structuredClone(defaults); }
+  }
+  let state = load();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+
+  const ui = { col: 0, zone: "all", open: new Set() };
+
+  const $ = (id) => document.getElementById(id);
+  const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  const fmt = (v) => brl.format(v);
+  const round2 = (v) => Math.round(v * 100) / 100;
+  const todayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return todayKey(d); };
+  const parseMoney = (s) => {
+    if (!s) return NaN;
+    let t = String(s).trim().replace(/[^\d,.-]/g, "");
+    if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+    return round2(parseFloat(t));
+  };
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const findMission = (id) => state.missions.find((m) => m.id === id);
+  const findLoot = (id) => state.loot.find((l) => l.id === id);
+  const trashIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+
+  /* Toast */
+  let toastT;
+  function toast(msg, tone = "") {
+    const el = $("toast");
+    el.textContent = msg;
+    el.className = `toast show ${tone}`;
+    clearTimeout(toastT);
+    toastT = setTimeout(() => (el.className = "toast"), 2600);
+  }
+  function bump(el) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+
+  /* Audio */
+  let audioCtx;
+  function unlockAudio() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch {}
+  }
+  function alarm() {
+    if (!audioCtx) return;
+    [880, 1175, 1568, 880, 1175, 1568].forEach((f, i) => {
+      const t = audioCtx.currentTime + i * 0.18;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "square";
+      o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.17);
+    });
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+  }
+  function blip() {
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "triangle"; o.frequency.setValueAtTime(1320, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + 0.13);
+  }
+
+  /* HUD */
+  function currentStreak() {
+    const t = state.timer;
+    return t.lastDoneDate === todayKey() || t.lastDoneDate === yesterdayKey() ? t.streak : 0;
+  }
+  function renderHud() {
+    $("hudMoney").textContent = fmt(state.money);
+    $("hudPa").textContent = `${state.pa} PA`;
+    const streak = currentStreak();
+    $("streak").textContent = `Sequência ${streak}d`;
+    $("statSessions").textContent = state.timer.sessions;
+    $("statStreak").textContent = streak;
+    $("statBest").textContent = state.timer.best;
+  }
+
+  /* MOEDOR */
+  let tick;
+  const ring = $("ringProg");
+  ring.style.strokeDasharray = CIRC;
+  ring.style.strokeDashoffset = 0;
+
+  function completeMission(withSound) {
+    const t = state.timer;
+    t.streak = t.lastDoneDate === yesterdayKey() ? t.streak + 1 : 1;
+    t.best = Math.max(t.best, t.streak);
+    t.lastDoneDate = todayKey();
+    t.sessions += 1;
+    t.endsAt = null;
+    state.pa += 1;
+    const m = t.targetId && findMission(t.targetId);
+    if (m) {
+      m.focus = (m.focus || 0) + 1;
+      if (m.col === 0) m.col = 1;
+    }
+    save();
+    if (withSound) alarm();
+    renderAll();
+    bump($("hudPa"));
+    toast(m ? `Missão cumprida em "${m.title}"! +1 PA` : "Missão cumprida! +1 PA adicionado ao inventário", "gold");
+  }
+
+  function renderTimer() {
+    const t = state.timer;
+    const done = t.lastDoneDate === todayKey();
+    const running = !!t.endsAt;
+    const startBtn = $("startBtn"), abortBtn = $("abortBtn"), status = $("timerStatus");
+    let remaining = DURATION;
+
+    if (running) {
+      remaining = Math.max(0, t.endsAt - Date.now());
+      if (remaining === 0) { stopTick(); completeMission(true); return; }
+    } else if (done) {
+      remaining = 0;
+    }
+
+    const secs = Math.ceil(remaining / 1000);
+    const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+    const ss = String(secs % 60).padStart(2, "0");
+    $("timeText").textContent = `${mm}:${ss}`;
+    ring.style.strokeDashoffset = CIRC * (1 - remaining / DURATION);
+    ring.style.stroke = done && !running ? "var(--cyan)" : "var(--gold)";
+    $("targetSelect").disabled = running;
+
+    if (running) {
+      status.textContent = "Em combate"; status.className = "status on";
+      startBtn.disabled = true; startBtn.textContent = "Missão em andamento";
+      abortBtn.hidden = false;
+      $("timerHint").textContent = "Mantenha o foco. Você pode minimizar o app.";
+      document.title = `${mm}:${ss} · O Moedor`;
+    } else if (done) {
+      status.textContent = "Concluído"; status.className = "status done";
+      startBtn.disabled = true; startBtn.textContent = "Território conquistado hoje";
+      abortBtn.hidden = true;
+      $("timerHint").textContent = "Nova missão liberada amanhã à meia-noite.";
+      document.title = "Quartel General — Comando Pessoal";
+    } else {
+      status.textContent = "Pronto"; status.className = "status";
+      startBtn.disabled = false; startBtn.textContent = "Iniciar Missão";
+      abortBtn.hidden = true;
+      $("timerHint").textContent = "Disponível 1 vez por dia.";
+      document.title = "Quartel General — Comando Pessoal";
+    }
+    $("dotMoedor").classList.toggle("show", !done);
+  }
+  function startTick() { stopTick(); tick = setInterval(renderTimer, 250); }
+  function stopTick() { clearInterval(tick); }
+
+  function renderTarget() {
+    const sel = $("targetSelect");
+    const open = state.missions.filter((m) => m.col !== 2);
+    const t = state.timer;
+    if (t.targetId && !findMission(t.targetId)) t.targetId = null;
+    const zones = [...new Set(open.map((m) => m.zone || "Geral"))];
+    sel.innerHTML = `<option value="">Foco livre (sem missão)</option>` +
+      zones.map((z) => `<optgroup label="${esc(z)}">${open.filter((m) => (m.zone || "Geral") === z).map((m) => `<option value="${m.id}">${esc(m.title)}</option>`).join("")}</optgroup>`).join("");
+    const target = t.targetId && findMission(t.targetId);
+    sel.value = target && target.col !== 2 ? target.id : "";
+    if (target && target.col === 2) {
+      const extra = document.createElement("option");
+      extra.value = target.id; extra.textContent = `${target.title} (concluída)`;
+      sel.appendChild(extra); sel.value = target.id;
+    }
+
+    $("ringTarget").textContent = target ? target.title : "Foco livre";
+    const info = $("targetInfo");
+    if (!target) {
+      info.innerHTML = open.length
+        ? `<p class="hint" style="margin:0">Selecione uma missão do quadro para direcionar os 5 minutos a ela.</p>`
+        : `<p class="hint" style="margin:0">Nenhuma missão ativa. <button class="link-btn" data-act="goto" data-tab="missoes" style="padding:0">Criar missão no quadro</button></p>`;
+      return;
+    }
+    const total = target.subs.length, doneN = target.subs.filter((s) => s.done).length;
+    const next = target.subs.find((s) => !s.done);
+    info.innerHTML = `<div class="target-mission">
+      <div class="m-tags"><span class="zone">${esc(target.zone || "Geral")}</span><span class="badge ${target.col === 1 ? "ready" : "locked"}">${COLS[target.col]}</span></div>
+      <h3>${esc(target.title)}</h3>
+      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${target.focus || 0} × 5 min</span></div>
+      <div class="bar"><i style="width:${total ? (doneN / total) * 100 : 0}%;background:var(--gold)"></i></div>
+      ${next ? `<div class="next-step"><div><div class="k">Próximo micropasso</div><p>${esc(next.text)}</p></div><button class="btn btn-ghost btn-sm" data-act="next-done" data-id="${target.id}" data-sid="${next.id}">Feito</button></div>`
+             : total ? `<p class="hint">Todos os micropassos concluídos.</p>` : `<p class="hint">Sem micropassos. Adicione no quadro de Missões.</p>`}
+    </div>`;
+  }
+
+  $("targetSelect").addEventListener("change", (e) => {
+    if (state.timer.endsAt) return;
+    state.timer.targetId = e.target.value || null;
+    save(); renderTarget(); renderMissoes();
+  });
+
+  $("startBtn").addEventListener("click", () => {
+    if (state.timer.lastDoneDate === todayKey() || state.timer.endsAt) return;
+    unlockAudio();
+    state.timer.endsAt = Date.now() + DURATION;
+    const m = state.timer.targetId && findMission(state.timer.targetId);
+    if (m && m.col === 0) m.col = 1;
+    save();
+    renderTimer(); renderTarget(); renderMissoes(); startTick();
+    toast(m ? `Atacando: ${m.title}` : "Missão iniciada. 5 minutos no relógio.", "gold");
+  });
+  $("abortBtn").addEventListener("click", () => {
+    if (!confirm("Abortar a missão? Você não receberá o PA.")) return;
+    state.timer.endsAt = null; save(); stopTick(); renderTimer();
+    toast("Missão abortada.", "red");
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) renderTimer(); });
+
+  /* MISSÕES */
+  function missionCard(m) {
+    const total = m.subs.length, doneN = m.subs.filter((s) => s.done).length;
+    const pct = total ? (doneN / total) * 100 : m.col === 2 ? 100 : 0;
+    const isTarget = state.timer.targetId === m.id;
+    const next = m.subs.find((s) => !s.done);
+    const open = ui.open.has(m.id);
+    const middle = m.col === 2
+      ? `<div class="won-date">Concluída ${m.doneAt ? new Date(m.doneAt).toLocaleDateString("pt-BR") : ""}</div>`
+      : `<button class="btn ${isTarget ? "btn-ghost" : "btn-gold"}" data-act="grind" data-id="${m.id}">${isTarget ? "No Moedor" : "Moer 5 min"}</button>`;
+    return `<article class="mission c${m.col} ${isTarget && m.col !== 2 ? "targeted" : ""}">
+      <div class="m-tags"><span class="zone">${esc(m.zone || "Geral")}</span>${isTarget && m.col !== 2 ? '<span class="badge ready">Alvo do Moedor</span>' : ""}</div>
+      <h3 class="m-title">${esc(m.title)}</h3>
+      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${m.focus || 0} × 5 min</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      ${next && m.col !== 2 ? `<p class="next"><span>Próximo</span>${esc(next.text)}</p>` : ""}
+      <details class="m-details" data-card="${m.id}" ${open ? "open" : ""}>
+        <summary>Checklist · ${doneN}/${total}</summary>
+        ${total ? `<ul class="checklist">${m.subs.map((s) => `<li>
+          <label class="check ${s.done ? "is-done" : ""}"><input type="checkbox" data-sub="${m.id}" data-sid="${s.id}" ${s.done ? "checked" : ""} /><span>${esc(s.text)}</span></label>
+          <button class="mini-x" type="button" data-act="del-sub" data-id="${m.id}" data-sid="${s.id}" aria-label="Remover micropasso ${esc(s.text)}">×</button>
+        </li>`).join("")}</ul>` : `<p class="hint" style="margin:0 0 8px">Nenhum micropasso ainda.</p>`}
+        <form class="addsub" data-addsub="${m.id}" novalidate>
+          <input name="t" maxlength="80" placeholder="Novo micropasso de 5 min" aria-label="Novo micropasso para ${esc(m.title)}" autocomplete="off" />
+          <button class="btn btn-ghost" type="submit" aria-label="Adicionar micropasso">+</button>
+        </form>
+      </details>
+      <div class="m-actions">
+        <button class="icon-btn" data-act="move" data-id="${m.id}" data-dir="-1" ${m.col === 0 ? "disabled" : ""} aria-label="${m.col > 0 ? `Mover para ${COLS[m.col - 1]}` : "Já está na primeira coluna"}">‹</button>
+        ${middle}
+        <button class="icon-btn" data-act="move" data-id="${m.id}" data-dir="1" ${m.col === 2 ? "disabled" : ""} aria-label="${m.col < 2 ? `Mover para ${COLS[m.col + 1]}` : "Já está concluída"}">›</button>
+        <button class="icon-btn" data-act="del-mission" data-id="${m.id}" aria-label="Excluir missão ${esc(m.title)}">${trashIcon}</button>
+      </div>
+    </article>`;
+  }
+
+  function renderMissoes() {
+    const zones = [...new Set(state.missions.map((m) => m.zone || "Geral"))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    if (ui.zone !== "all" && !zones.includes(ui.zone)) ui.zone = "all";
+    const inZone = (m) => ui.zone === "all" || (m.zone || "Geral") === ui.zone;
+
+    [0, 1, 2].forEach((c) => { $(`cnt${c}`).textContent = state.missions.filter((m) => m.col === c && inZone(m)).length; });
+    document.querySelectorAll("#seg button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.col) === ui.col)));
+
+    $("zoneChips").innerHTML = zones.length
+      ? [`<button type="button" class="zchip" data-zone="all" aria-pressed="${ui.zone === "all"}">Todas as zonas</button>`]
+          .concat(zones.map((z) => `<button type="button" class="zchip" data-zone="${esc(z)}" aria-pressed="${ui.zone === z}">${esc(z)}</button>`)).join("")
+      : "";
+
+    $("zoneList").innerHTML = [...new Set([...DEFAULT_ZONES, ...zones])].map((z) => `<option value="${esc(z)}"></option>`).join("");
+
+    const list = state.missions.filter((m) => m.col === ui.col && inZone(m))
+      .sort((a, b) => ui.col === 2 ? (b.doneAt || 0) - (a.doneAt || 0) : a.createdAt - b.createdAt);
+
+    if (!state.missions.length) {
+      $("missionList").innerHTML = `<div class="card"><p class="empty">Quadro vazio. Lance sua primeira missão ou carregue um plano de exemplo com zonas da casa.</p><button class="btn btn-ghost" data-act="seed">Carregar plano de exemplo</button></div>`;
+    } else if (!list.length) {
+      const msg = ["Nenhuma missão a fazer aqui.", "Nada em andamento. Escolha uma missão e moa 5 minutos.", "Nenhuma missão concluída ainda."][ui.col];
+      $("missionList").innerHTML = `<div class="card"><p class="empty">${msg}</p></div>`;
+    } else {
+      $("missionList").innerHTML = list.map(missionCard).join("");
+    }
+    $("dotMissoes").classList.toggle("show", state.missions.some((m) => m.col === 1));
+  }
+
+  $("missionForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = $("mTitle").value.trim();
+    const zone = $("mZone").value.trim() || "Geral";
+    if (!title) { toast("Dê um nome à missão.", "red"); $("mTitle").focus(); return; }
+    const subs = $("mSubs").value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 40).map((text) => ({ id: uid(), text: text.slice(0, 80), done: false }));
+    state.missions.push({ id: uid(), title, zone, col: 0, subs, focus: 0, createdAt: Date.now(), doneAt: null });
+    save();
+    e.target.reset();
+    $("missionDetails").open = false;
+    ui.col = 0;
+    renderMissoes(); renderTarget(); renderDados();
+    toast("Missão lançada no quadro.", "cyan");
+  });
+
+  $("seg").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-col]");
+    if (!b) return;
+    ui.col = Number(b.dataset.col); renderMissoes();
+  });
+  $("zoneChips").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-zone]");
+    if (!b) return;
+    ui.zone = b.dataset.zone; renderMissoes();
+  });
+  document.addEventListener("toggle", (e) => {
+    const id = e.target.dataset && e.target.dataset.card;
+    if (!id) return;
+    e.target.open ? ui.open.add(id) : ui.open.delete(id);
+  }, true);
+
+  document.addEventListener("change", (e) => {
+    const cb = e.target.closest("[data-sub]");
+    if (!cb) return;
+    const m = findMission(cb.dataset.sub);
+    const s = m && m.subs.find((x) => x.id === cb.dataset.sid);
+    if (!s) return;
+    s.done = cb.checked;
+    if (s.done) { unlockAudio(); blip(); }
+    if (s.done && m.col === 0) m.col = 1;
+    save(); renderMissoes(); renderTarget(); renderDados();
+    if (s.done && m.subs.every((x) => x.done) && m.col !== 2) toast("Todos os micropassos concluídos. Mova para Concluído ›", "cyan");
+  });
+
+  document.addEventListener("submit", (e) => {
+    const f = e.target.closest("[data-addsub]");
+    if (!f) return;
+    e.preventDefault();
+    const m = findMission(f.dataset.addsub);
+    const input = f.elements.t;
+    const text = input.value.trim();
+    if (!m || !text) { input.focus(); return; }
+    m.subs.push({ id: uid(), text: text.slice(0, 80), done: false });
+    save(); ui.open.add(m.id); renderMissoes(); renderTarget();
+    const again = document.querySelector(`[data-addsub="${m.id}"] input`);
+    if (again) again.focus();
+  });
+
+  function moveMissionTo(m, col) {
+    m.col = Math.max(0, Math.min(2, col));
+    m.doneAt = m.col === 2 ? Date.now() : null;
+    if (m.col === 2 && state.timer.targetId === m.id && !state.timer.endsAt) state.timer.targetId = null;
+  }
+
+  function seed() {
+    const mk = (title, zone, steps, col = 0) => ({ id: uid(), title, zone, col, subs: steps.map((text) => ({ id: uid(), text, done: false })), focus: 0, createdAt: Date.now(), doneAt: null });
+    state.missions.push(
+      mk("Reconquistar a cozinha", "Cozinha", ["Lavar a louça da pia", "Limpar o fogão", "Organizar a bancada", "Tirar o lixo"]),
+      mk("Base de operações", "Quarto", ["Arrumar a cama", "Recolher roupas do chão", "Organizar a mesa de cabeceira"]),
+      mk("Setor de suprimentos", "Lavanderia", ["Separar roupas por cor", "Colocar uma máquina para lavar", "Estender as roupas"]),
+      mk("Posto de comando", "Escritório", ["Esvaziar a mesa", "Organizar cabos do PC", "Arquivar papéis soltos"])
+    );
+  }
+
+  /* COFRE + METAS */
+  function goalTarget(g) {
+    const l = g.lootId && findLoot(g.lootId);
+    return l ? l.money : g.target;
+  }
+  function computeGoals() {
+    let pool = Math.max(0, state.money);
+    return state.goals.filter((g) => !g.doneAt).map((g) => {
+      const target = goalTarget(g);
+      const alloc = round2(Math.min(pool, target));
+      pool = round2(pool - alloc);
+      return { g, target, alloc, pct: target > 0 ? Math.floor((alloc / target) * 100) : 100, full: alloc >= target };
+    });
+  }
+
+  function renderCofre() {
+    const big = $("bigBalance");
+    big.textContent = fmt(state.money);
+    big.classList.toggle("neg", state.money < 0);
+    const log = $("moneyLog");
+    if (!state.moneyLog.length) { log.innerHTML = '<li class="empty" style="justify-content:center">Nenhuma operação registrada.</li>'; }
+    else {
+      log.innerHTML = state.moneyLog.slice(0, 15).map((e) => {
+        const d = new Date(e.at);
+        const when = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        const cls = e.amount >= 0 ? "plus" : "minus";
+        const label = e.type === "loot" ? `Resgate: ${esc(e.label)}` : e.amount >= 0 ? "Depósito" : "Retirada";
+        return `<li><div><div>${label}</div><div class="when">${when}</div></div><div class="val ${cls}">${e.amount >= 0 ? "+" : "−"} ${fmt(Math.abs(e.amount))}</div></li>`;
+      }).join("");
+    }
+    renderMetas();
+  }
+
+  function renderMetas() {
+    const rows = computeGoals();
+    const allocated = round2(rows.reduce((s, r) => s + r.alloc, 0));
+    $("allocGoals").textContent = fmt(allocated);
+    $("allocFree").textContent = fmt(Math.max(0, round2(state.money - allocated)));
+    $("goalCount").textContent = `${rows.length} ${rows.length === 1 ? "ativa" : "ativas"}`;
+
+    const active = rows.map((r, i) => {
+      const { g, target, alloc, pct, full } = r;
+      const loot = g.lootId && findLoot(g.lootId);
+      const paLine = loot && loot.pa > 0
+        ? `<div class="gbar pa" aria-hidden="true"><i style="width:${Math.min(100, (state.pa / loot.pa) * 100)}%"></i></div>
+           <div class="goal-meta"><span>PA ${Math.min(state.pa, loot.pa)}/${loot.pa}</span><span class="${state.pa >= loot.pa ? "ok" : ""}">${state.pa >= loot.pa ? "PA completos" : `faltam ${loot.pa - state.pa} PA`}</span></div>`
+        : "";
+      const lootReady = loot && full && state.pa >= loot.pa;
+      const middle = loot
+        ? `<button class="btn ${lootReady ? "btn-gold" : "btn-ghost"} btn-sm" style="width:100%" data-act="goto" data-tab="vitrine">${lootReady ? "Resgatar na Vitrine" : "Ver na Vitrine"}</button>`
+        : full ? `<button class="btn btn-cyan btn-sm" style="width:100%" data-act="goal-done" data-id="${g.id}">Meta atingida</button>` : `<span></span>`;
+      return `<article class="goal ${full ? "full" : ""}">
+        <div class="goal-top">
+          <div class="goal-name"><span class="rank">#${i + 1}</span>${esc(g.name)} ${loot ? '<span class="badge ready" style="margin-left:4px">Vitrine</span>' : ""}</div>
+          <div class="pct">${pct}%</div>
+        </div>
+        <div class="gbar" role="progressbar" aria-label="Progresso da meta ${esc(g.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+        <div class="goal-meta"><span>${fmt(alloc)} de ${fmt(target)}</span><span class="${full ? "ok" : ""}">${full ? "Abastecida" : `faltam ${fmt(round2(target - alloc))}`}</span></div>
+        ${paLine}
+        <div class="goal-actions">
+          <button class="icon-btn" data-act="goal-up" data-id="${g.id}" ${i === 0 ? "disabled" : ""} aria-label="Aumentar prioridade de ${esc(g.name)}">↑</button>
+          ${middle}
+          <button class="icon-btn" data-act="del-goal" data-id="${g.id}" aria-label="Excluir meta ${esc(g.name)}">${trashIcon}</button>
+        </div>
+      </article>`;
+    }).join("");
+
+    const done = state.goals.filter((g) => g.doneAt).sort((a, b) => b.doneAt - a.doneAt).slice(0, 5).map((g) =>
+      `<article class="goal done-goal"><div class="goal-top"><div class="goal-name">${esc(g.name)}</div><span class="badge won">Concluída</span></div>
+       <div class="goal-meta" style="margin-top:6px"><span>${fmt(g.target)}</span><span>${new Date(g.doneAt).toLocaleDateString("pt-BR")}</span></div></article>`).join("");
+
+    $("goalList").innerHTML = (active || `<p class="empty">Nenhuma meta ativa. Crie uma meta ou vincule uma recompensa da Vitrine.</p>`) +
+      (done ? `<h3 class="section-title" style="margin-top:14px">Concluídas</h3>${done}` : "");
+
+    const linked = new Set(state.goals.filter((g) => !g.doneAt && g.lootId).map((g) => g.lootId));
+    const sel = $("goalLoot");
+    const prev = sel.value;
+    const options = state.loot.filter((l) => !l.wonAt && !linked.has(l.id));
+    sel.innerHTML = `<option value="">Meta independente</option>` + options.map((l) => `<option value="${l.id}">${esc(l.name)} · ${fmt(l.money)}</option>`).join("");
+    sel.value = options.some((l) => l.id === prev) ? prev : "";
+    syncGoalForm();
+  }
+
+  function syncGoalForm() {
+    const loot = $("goalLoot").value && findLoot($("goalLoot").value);
+    $("goalTarget").disabled = !!loot;
+    if (loot) {
+      $("goalName").value = loot.name;
+      $("goalTarget").value = loot.money.toFixed(2).replace(".", ",");
+    }
+  }
+  $("goalLoot").addEventListener("change", () => {
+    if (!$("goalLoot").value) { $("goalName").value = ""; $("goalTarget").value = ""; }
+    syncGoalForm();
+  });
+
+  function addGoal({ name, target, lootId = null }) {
+    state.goals.push({ id: uid(), name, target, lootId, createdAt: Date.now(), doneAt: null });
+  }
+
+  $("goalForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const lootId = $("goalLoot").value || null;
+    const loot = lootId && findLoot(lootId);
+    const name = $("goalName").value.trim() || (loot ? loot.name : "");
+    const target = loot ? loot.money : parseMoney($("goalTarget").value);
+    if (!name) { toast("Dê um nome à meta.", "red"); $("goalName").focus(); return; }
+    if (!isFinite(target) || target <= 0) { toast("Informe um valor alvo válido.", "red"); $("goalTarget").focus(); return; }
+    addGoal({ name, target, lootId });
+    save();
+    e.target.reset(); $("goalTarget").disabled = false;
+    $("goalDetails").open = false;
+    renderMetas(); renderVitrine();
+    toast("Meta criada no Cofre.", "cyan");
+  });
+
+  function moveMoney(sign) {
+    const input = $("moneyInput");
+    const v = parseMoney(input.value);
+    if (!isFinite(v) || v <= 0) { toast("Informe um valor válido.", "red"); input.focus(); return; }
+    const amount = sign * v;
+    state.money = round2(state.money + amount);
+    state.moneyLog.unshift({ id: uid(), amount, type: "manual", at: Date.now() });
+    state.moneyLog = state.moneyLog.slice(0, 100);
+    save();
+    input.value = "";
+    renderAll(); bump($("hudMoney"));
+    toast(sign > 0 ? `+ ${fmt(v)} no cofre` : `− ${fmt(v)} do cofre`, sign > 0 ? "cyan" : "red");
+  }
+  $("addBtn").addEventListener("click", () => moveMoney(1));
+  $("subBtn").addEventListener("click", () => moveMoney(-1));
+  $("moneyForm").addEventListener("submit", (e) => { e.preventDefault(); moveMoney(1); });
+  document.querySelectorAll("[data-quick]").forEach((b) => b.addEventListener("click", () => {
+    const cur = parseMoney($("moneyInput").value);
+    const next = (isFinite(cur) ? cur : 0) + Number(b.dataset.quick);
+    $("moneyInput").value = next.toFixed(2).replace(".", ",");
+  }));
+
+  /* VITRINE */
+  function lootCard(item, goalRows) {
+    const haveMoney = state.money >= item.money;
+    const havePa = state.pa >= item.pa;
+    const ready = haveMoney && havePa;
+    const pm = item.money > 0 ? Math.min(100, Math.max(0, (state.money / item.money) * 100)) : 100;
+    const pp = item.pa > 0 ? Math.min(100, (state.pa / item.pa) * 100) : 100;
+
+    if (item.wonAt) {
+      const d = new Date(item.wonAt).toLocaleDateString("pt-BR");
+      return `<article class="loot won">
+        <div class="loot-head"><h3 class="loot-name">${esc(item.name)}</h3><span class="badge won">Conquistado</span></div>
+        <div class="costs">
+          <div class="cost"><div class="k">Pago</div><div class="v">${fmt(item.money)}</div></div>
+          <div class="cost"><div class="k">Gasto</div><div class="v">${item.pa} PA</div></div>
+        </div>
+        <div class="loot-actions">
+          <div class="won-date">Resgatado em ${d}</div>
+          <button class="icon-btn" data-act="del-loot" data-id="${item.id}" aria-label="Remover ${esc(item.name)}">${trashIcon}</button>
+        </div>
+      </article>`;
+    }
+
+    const missing = [];
+    if (!haveMoney) missing.push(`faltam ${fmt(round2(item.money - state.money))}`);
+    if (!havePa) missing.push(`faltam ${item.pa - state.pa} PA`);
+    const gi = goalRows.findIndex((r) => r.g.lootId === item.id);
+    const goalLine = gi >= 0
+      ? `<p class="goal-link">Meta #${gi + 1} no Cofre · ${goalRows[gi].pct}% abastecida (${fmt(goalRows[gi].alloc)})</p>`
+      : `<button class="link-btn" data-act="loot-goal" data-id="${item.id}">+ Criar meta no Cofre</button>`;
+
+    return `<article class="loot ${ready ? "ready" : ""}">
+      <div class="loot-head"><h3 class="loot-name">${esc(item.name)}</h3><span class="badge ${ready ? "ready" : "locked"}">${ready ? "Liberado" : "Bloqueado"}</span></div>
+      <div class="costs">
+        <div class="cost money ${haveMoney ? "ok" : "miss"}"><div class="k">Custo R$</div><div class="v">${fmt(item.money)}</div><div class="bar"><i style="width:${pm}%"></i></div></div>
+        <div class="cost pa ${havePa ? "ok" : "miss"}"><div class="k">Custo PA</div><div class="v">${item.pa} PA</div><div class="bar"><i style="width:${pp}%"></i></div></div>
+      </div>
+      <div class="loot-actions">
+        <button class="btn btn-gold" data-act="buy" data-id="${item.id}" ${ready ? "" : "disabled"}>${ready ? "Resgatar" : "Bloqueado"}</button>
+        <button class="icon-btn" data-act="del-loot" data-id="${item.id}" aria-label="Remover ${esc(item.name)}">${trashIcon}</button>
+      </div>
+      ${missing.length ? `<p class="hint">Para liberar: ${missing.join(" e ")}.</p>` : ""}
+      ${goalLine}
+    </article>`;
+  }
+
+  function renderVitrine() {
+    const goalRows = computeGoals();
+    const open = state.loot.filter((l) => !l.wonAt);
+    const won = state.loot.filter((l) => l.wonAt).sort((a, b) => b.wonAt - a.wonAt);
+    $("lootList").innerHTML = open.length ? open.map((l) => lootCard(l, goalRows)).join("") : '<div class="card"><p class="empty">Nenhuma recompensa na vitrine. Cadastre seu primeiro loot.</p></div>';
+    $("wonTitle").hidden = !won.length;
+    $("wonList").innerHTML = won.map((l) => lootCard(l, goalRows)).join("");
+    $("dotVitrine").classList.toggle("show", open.some((l) => state.money >= l.money && state.pa >= l.pa));
+  }
+
+  $("lootForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("lootName").value.trim();
+    const money = $("lootMoney").value.trim() === "" ? 0 : parseMoney($("lootMoney").value);
+    const pa = $("lootPa").value.trim() === "" ? 0 : parseInt($("lootPa").value, 10);
+    if (!name) { toast("Dê um nome à recompensa.", "red"); $("lootName").focus(); return; }
+    if (!isFinite(money) || money < 0) { toast("Custo em R$ inválido.", "red"); $("lootMoney").focus(); return; }
+    if (!Number.isInteger(pa) || pa < 0) { toast("Custo em PA inválido.", "red"); $("lootPa").focus(); return; }
+    const item = { id: uid(), name, money, pa, wonAt: null, createdAt: Date.now() };
+    state.loot.push(item);
+    const asGoal = $("lootAsGoal").checked && money > 0;
+    if (asGoal) addGoal({ name, target: money, lootId: item.id });
+    save();
+    e.target.reset(); $("lootAsGoal").checked = true;
+    $("addDetails").open = false;
+    renderVitrine(); renderMetas(); renderDados();
+    toast(asGoal ? "Recompensa cadastrada e meta criada no Cofre." : "Recompensa adicionada à vitrine.", "cyan");
+  });
+
+  /* DADOS */
+  function renderDados() {
+    const ms = state.missions;
+    const subsDone = ms.reduce((s, m) => s + m.subs.filter((x) => x.done).length, 0);
+    const items = [
+      [ms.length, "Missões"],
+      [ms.filter((m) => m.col === 2).length, "Concluídas"],
+      [subsDone, "Micropassos"],
+      [state.timer.sessions * 5, "Min focados"],
+      [state.goals.filter((g) => g.doneAt).length + "/" + state.goals.length, "Metas"],
+      [state.loot.filter((l) => l.wonAt).length, "Loot"]
+    ];
+    $("dataStats").innerHTML = items.map(([v, k]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+  }
+
+  const backupText = () => JSON.stringify({ app: "quartel-general", version: 2, exportedAt: new Date().toISOString(), ...state }, null, 2);
+  $("copyBackup").addEventListener("click", async () => {
+    const txt = backupText();
+    try { await navigator.clipboard.writeText(txt); toast("Backup copiado para a área de transferência.", "cyan"); }
+    catch { $("importArea").value = txt; $("importArea").select(); toast("Backup exibido abaixo. Copie manualmente.", "gold"); }
+  });
+  $("downloadBackup").addEventListener("click", () => {
+    try {
+      const url = URL.createObjectURL(new Blob([backupText()], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url; a.download = `quartel-general-${todayKey()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast("Download do backup iniciado.", "cyan");
+    } catch { $("importArea").value = backupText(); toast("Download bloqueado. Backup exibido abaixo.", "gold"); }
+  });
+  $("importBtn").addEventListener("click", () => {
+    let data;
+    try { data = JSON.parse($("importArea").value); } catch { toast("Backup inválido. Verifique o JSON.", "red"); return; }
+    if (!data || typeof data.money !== "number" || typeof data.pa !== "number") { toast("Backup não reconhecido.", "red"); return; }
+    if (!confirm("Restaurar este backup? O progresso atual será substituído.")) return;
+    delete data.app; delete data.version; delete data.exportedAt;
+    stopTick();
+    state = hydrate(data);
+    save(); $("importArea").value = "";
+    renderAll(); if (state.timer.endsAt) startTick();
+    toast("Backup restaurado com sucesso.", "cyan");
+  });
+  $("resetBtn").addEventListener("click", () => {
+    if (!confirm("Zerar TODO o progresso? Essa ação não pode ser desfeita.")) return;
+    stopTick();
+    state = structuredClone(defaults);
+    save(); renderAll();
+    toast("Progresso zerado. Nova campanha iniciada.", "red");
+  });
+
+  /* Ações globais */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-act]");
+    if (!el) return;
+    const act = el.dataset.act, id = el.dataset.id;
+
+    if (act === "goto") { showTab(el.dataset.tab); return; }
+
+    if (act === "seed") {
+      seed(); save(); ui.col = 0; renderAll();
+      toast("Plano de exemplo carregado.", "cyan"); return;
+    }
+
+    if (act === "grind") {
+      const m = findMission(id); if (!m) return;
+      if (state.timer.endsAt && state.timer.targetId !== m.id) { toast("Já há uma missão em andamento no Moedor.", "red"); return; }
+      state.timer.targetId = m.id;
+      save(); renderAll(); showTab("moedor");
+      toast(state.timer.lastDoneDate === todayKey() ? "Alvo definido. O Moedor libera amanhã." : `Alvo travado: ${m.title}`, "gold");
+      return;
+    }
+
+    if (act === "move") {
+      const m = findMission(id); if (!m) return;
+      moveMissionTo(m, m.col + Number(el.dataset.dir));
+      save(); renderMissoes(); renderTarget(); renderDados();
+      if (m.col === 2) { unlockAudio(); blip(); toast(`Missão concluída: ${m.title}`, "cyan"); }
+      return;
+    }
+
+    if (act === "del-mission") {
+      const m = findMission(id);
+      if (!m || !confirm(`Excluir a missão "${m.title}"?`)) return;
+      if (state.timer.targetId === m.id && state.timer.endsAt) { toast("Essa missão está no Moedor agora.", "red"); return; }
+      state.missions = state.missions.filter((x) => x.id !== id);
+      if (state.timer.targetId === id) state.timer.targetId = null;
+      ui.open.delete(id);
+      save(); renderMissoes(); renderTarget(); renderDados(); return;
+    }
+
+    if (act === "del-sub") {
+      const m = findMission(id); if (!m) return;
+      m.subs = m.subs.filter((s) => s.id !== el.dataset.sid);
+      save(); renderMissoes(); renderTarget(); renderDados(); return;
+    }
+
+    if (act === "next-done") {
+      const m = findMission(id);
+      const s = m && m.subs.find((x) => x.id === el.dataset.sid);
+      if (!s) return;
+      s.done = true; if (m.col === 0) m.col = 1;
+      unlockAudio(); blip();
+      save(); renderTarget(); renderMissoes(); renderDados();
+      if (m.subs.every((x) => x.done)) toast("Todos os micropassos concluídos!", "cyan");
+      return;
+    }
+
+    if (act === "goal-up") {
+      const actives = state.goals.filter((g) => !g.doneAt);
+      const i = actives.findIndex((g) => g.id === id);
+      if (i <= 0) return;
+      const a = state.goals.indexOf(actives[i]), b = state.goals.indexOf(actives[i - 1]);
+      [state.goals[a], state.goals[b]] = [state.goals[b], state.goals[a]];
+      save(); renderMetas(); renderVitrine(); return;
+    }
+
+    if (act === "goal-done") {
+      const g = state.goals.find((x) => x.id === id); if (!g) return;
+      g.doneAt = Date.now(); g.target = goalTarget(g);
+      save(); renderMetas(); renderVitrine(); renderDados();
+      unlockAudio(); blip(); toast(`Meta atingida: ${g.name}`, "cyan"); return;
+    }
+
+    if (act === "del-goal") {
+      const g = state.goals.find((x) => x.id === id);
+      if (!g || !confirm(`Excluir a meta "${g.name}"? O saldo não é alterado.`)) return;
+      state.goals = state.goals.filter((x) => x.id !== id);
+      save(); renderMetas(); renderVitrine(); renderDados(); return;
+    }
+
+    if (act === "loot-goal") {
+      const l = findLoot(id); if (!l) return;
+      if (l.money <= 0) { toast("Essa recompensa não tem custo em R$.", "gold"); return; }
+      addGoal({ name: l.name, target: l.money, lootId: l.id });
+      save(); renderMetas(); renderVitrine(); renderDados();
+      toast("Meta criada no Cofre.", "cyan"); return;
+    }
+
+    if (act === "buy") {
+      const item = findLoot(id);
+      if (!item || item.wonAt || state.money < item.money || state.pa < item.pa) return;
+      if (!confirm(`Resgatar "${item.name}" por ${fmt(item.money)} e ${item.pa} PA?`)) return;
+      state.money = round2(state.money - item.money);
+      state.pa -= item.pa;
+      item.wonAt = Date.now();
+      state.goals.forEach((g) => { if (g.lootId === item.id && !g.doneAt) { g.doneAt = Date.now(); g.target = item.money; } });
+      if (item.money > 0) state.moneyLog.unshift({ id: uid(), amount: -item.money, type: "loot", label: item.name, at: Date.now() });
+      save(); renderAll();
+      bump($("hudMoney")); bump($("hudPa"));
+      unlockAudio(); alarm();
+      toast(`Conquistado: ${item.name}!`, "gold"); return;
+    }
+
+    if (act === "del-loot") {
+      const item = findLoot(id);
+      if (!item || !confirm(`Remover "${item.name}" da vitrine?`)) return;
+      state.goals.forEach((g) => { if (g.lootId === item.id) { g.target = item.money; g.lootId = null; } });
+      state.loot = state.loot.filter((l) => l.id !== item.id);
+      save(); renderVitrine(); renderMetas(); renderDados();
+    }
+  });
+
+  /* Tabs */
+  const tabs = document.querySelectorAll(".tab");
+  function showTab(name) {
+    tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+    document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === `panel-${name}`));
+    window.scrollTo({ top: 0 });
+  }
+  tabs.forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+  function renderAll() { renderHud(); renderTimer(); renderTarget(); renderMissoes(); renderCofre(); renderVitrine(); renderDados(); }
+
+  if (state.timer.endsAt && Date.now() >= state.timer.endsAt) completeMission(false);
+  renderAll();
+  if (state.timer.endsAt) startTick();
+})();
+</script>
+</body>
+</html>
