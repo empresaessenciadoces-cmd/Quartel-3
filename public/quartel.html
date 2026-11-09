@@ -181,6 +181,17 @@
   details.add[open] > summary { margin-bottom: 14px; }
 
   /* Metas */
+  .bill-sum { margin: 4px 0 12px; }
+  .bills { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .bill { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 12px; padding: 10px 10px 10px 12px; }
+  .bill.paid { border-left-color: var(--cyan); opacity: 0.7; }
+  .bill-info { flex: 1; min-width: 88px; }
+  .bill-name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+  .bill-sub { font-family: var(--mono); font-size: 11px; color: var(--muted, #8a93a6); margin-top: 2px; }
+  .bill.paid .bill-sub { color: var(--cyan); }
+  .bill-amt { font-family: var(--mono); font-size: 14px; white-space: nowrap; }
+  .bill-input { width: 72px; flex-shrink: 1; min-width: 56px; padding-left: 8px; padding-right: 8px; min-height: 44px; font-family: var(--mono); font-size: 14px; }
+  .bill .btn-sm { flex-shrink: 0; }
   .goal { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
   .goal.full { border-color: rgba(52,212,177,0.5); }
   .goal-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -403,6 +414,36 @@
 
       <div class="card">
         <div class="section-row">
+          <h2 class="section-title">A Pagar · <span id="billMonth"></span></h2>
+          <span class="tag-mono" id="billCount">0 pendentes</span>
+        </div>
+        <div class="alloc bill-sum">
+          <div class="cost"><div class="k">Pendente</div><div class="v" id="billPending">R$ 0,00</div></div>
+          <div class="cost"><div class="k">Pago no mês</div><div class="v" id="billPaid">R$ 0,00</div></div>
+        </div>
+        <ul class="bills" id="billList"></ul>
+        <details class="add" id="billDetails">
+          <summary class="btn btn-ghost">+ Nova conta recorrente</summary>
+          <form id="billForm" novalidate>
+            <div class="field">
+              <label for="billName">Nome</label>
+              <input id="billName" maxlength="40" placeholder="Ex: Aluguel" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="billAmount">Valor mensal (deixe vazio se variar)</label>
+              <div class="input-prefix">
+                <span>R$</span>
+                <input id="billAmount" inputmode="decimal" placeholder="0,00" autocomplete="off" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-cyan">Adicionar conta</button>
+          </form>
+        </details>
+        <p class="hint">Contas renovam todo mês. Pagar debita o valor do saldo e registra no histórico.</p>
+      </div>
+
+      <div class="card">
+        <div class="section-row">
           <h2 class="section-title">Metas financeiras</h2>
           <span class="tag-mono" id="goalCount">0 ativas</span>
         </div>
@@ -551,8 +592,44 @@
     moneyLog: [],
     loot: [],
     missions: [],
-    goals: []
+    goals: [],
+    bills: []
   };
+
+  /* Despesas recorrentes mensais (amount null = valor variável, informado ao pagar) */
+  const DEFAULT_BILLS = [
+    { name: "Laila", amount: 90 },
+    { name: "Mãe", amount: 100 },
+    { name: "App", amount: 40 },
+    { name: "Spotify", amount: 20 },
+    { name: "YouTube", amount: 20 },
+    { name: "Google One", amount: 7 },
+    { name: "Fornecedor", amount: null },
+    { name: "Internet", amount: null },
+    { name: "Luz", amount: null }
+  ];
+  const DEFAULT_LOOT = [
+    { name: "Hormônio", money: 200, pa: 0 },
+    { name: "Lente", money: 30, pa: 0 }
+  ];
+  function addFinanceSeed(s) {
+    if (!s.billsSeeded) {
+      DEFAULT_BILLS.forEach((b) => {
+        if (s.bills.some((x) => x.name === b.name)) return;
+        s.bills.push({ id: genId(), name: b.name, amount: b.amount, paidMonth: null, lastPaid: null, createdAt: Date.now() });
+      });
+      s.billsSeeded = true;
+    }
+    if (!s.lootSeeded) {
+      DEFAULT_LOOT.forEach((l) => {
+        if (s.loot.some((x) => x.name === l.name)) return;
+        const item = { id: genId(), name: l.name, money: l.money, pa: l.pa, wonAt: null, createdAt: Date.now() };
+        s.loot.push(item);
+        s.goals.push({ id: genId(), name: l.name, target: l.money, lootId: item.id, createdAt: Date.now(), doneAt: null });
+      });
+      s.lootSeeded = true;
+    }
+  }
 
   /* Protocolo Cavaleiro de Ouros: zonas e micropassos pré-carregados */
   const KNIGHT_PROTOCOL = [
@@ -574,6 +651,7 @@
   function freshState() {
     const s = structuredClone(defaults);
     addKnightProtocol(s);
+    addFinanceSeed(s);
     return s;
   }
 
@@ -586,6 +664,8 @@
     try { s = hydrate(JSON.parse(localStorage.getItem(KEY))); }
     catch { s = freshState(); }
     if (!s.knightSeeded) addKnightProtocol(s);
+    if (!Array.isArray(s.bills)) s.bills = [];
+    addFinanceSeed(s);
     return s;
   }
   let state = load();
@@ -1004,12 +1084,81 @@
         const d = new Date(e.at);
         const when = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
         const cls = e.amount >= 0 ? "plus" : "minus";
-        const label = e.type === "loot" ? `Resgate: ${esc(e.label)}` : e.amount >= 0 ? "Depósito" : "Retirada";
+        const label = e.type === "loot" ? `Resgate: ${esc(e.label)}` : e.type === "bill" ? `Conta: ${esc(e.label)}` : e.amount >= 0 ? "Depósito" : "Retirada";
         return `<li><div><div>${label}</div><div class="when">${when}</div></div><div class="val ${cls}">${e.amount >= 0 ? "+" : "−"} ${fmt(Math.abs(e.amount))}</div></li>`;
       }).join("");
     }
+    renderBills();
     renderMetas();
   }
+
+  /* CONTAS A PAGAR */
+  const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const findBill = (id) => state.bills.find((b) => b.id === id);
+  function renderBills() {
+    const mk = monthKey();
+    const m = new Date().toLocaleDateString("pt-BR", { month: "long" });
+    $("billMonth").textContent = m.charAt(0).toUpperCase() + m.slice(1);
+    const isPaid = (b) => b.paidMonth === mk;
+    const pending = state.bills.filter((b) => !isPaid(b));
+    const paid = state.bills.filter(isPaid);
+    $("billCount").textContent = `${pending.length} ${pending.length === 1 ? "pendente" : "pendentes"}`;
+    $("billPending").textContent = fmt(round2(pending.reduce((s, b) => s + (b.amount || 0), 0))) + (pending.some((b) => b.amount == null) ? " +" : "");
+    $("billPaid").textContent = fmt(round2(paid.reduce((s, b) => s + (b.lastPaid || 0), 0)));
+    const row = (b) => {
+      if (isPaid(b)) {
+        return `<li class="bill paid"><div class="bill-info"><div class="bill-name">${esc(b.name)}</div><div class="bill-sub">Pago · ${fmt(b.lastPaid || 0)}</div></div>
+          <button class="btn btn-ghost btn-sm" data-act="bill-undo" data-id="${b.id}" aria-label="Desfazer pagamento de ${esc(b.name)}">Desfazer</button>
+          <button class="icon-btn" data-act="del-bill" data-id="${b.id}" aria-label="Remover conta ${esc(b.name)}">${trashIcon}</button></li>`;
+      }
+      const amt = b.amount == null
+        ? `<input class="bill-input" id="bill-in-${b.id}" inputmode="decimal" placeholder="0,00" aria-label="Valor de ${esc(b.name)} neste mês" />`
+        : `<span class="bill-amt">${fmt(b.amount)}</span>`;
+      return `<li class="bill"><div class="bill-info"><div class="bill-name">${esc(b.name)}</div><div class="bill-sub">${b.amount == null ? "Valor variável" : "Mensal fixo"}</div></div>
+        ${amt}
+        <button class="btn btn-cyan btn-sm" data-act="bill-pay" data-id="${b.id}">Pagar</button>
+        <button class="icon-btn" data-act="del-bill" data-id="${b.id}" aria-label="Remover conta ${esc(b.name)}">${trashIcon}</button></li>`;
+    };
+    $("billList").innerHTML = state.bills.length
+      ? pending.map(row).join("") + paid.map(row).join("")
+      : '<li class="empty" style="text-align:center">Nenhuma conta cadastrada.</li>';
+  }
+  function payBill(id) {
+    const b = findBill(id); if (!b) return;
+    let v = b.amount;
+    if (v == null) {
+      const input = $(`bill-in-${b.id}`);
+      v = parseMoney(input && input.value);
+      if (!isFinite(v) || v <= 0) { toast(`Informe o valor de ${b.name}.`, "red"); input && input.focus(); return; }
+    }
+    state.money = round2(state.money - v);
+    state.moneyLog.unshift({ id: uid(), amount: -v, type: "bill", label: b.name, billId: b.id, at: Date.now() });
+    state.moneyLog = state.moneyLog.slice(0, 100);
+    b.paidMonth = monthKey(); b.lastPaid = v;
+    save(); renderAll(); bump($("hudMoney"));
+    toast(`${b.name} paga: − ${fmt(v)}`, "cyan");
+  }
+  function undoBill(id) {
+    const b = findBill(id); if (!b || b.paidMonth !== monthKey()) return;
+    const v = b.lastPaid || 0;
+    state.money = round2(state.money + v);
+    const i = state.moneyLog.findIndex((e) => e.type === "bill" && e.billId === b.id);
+    if (i >= 0) state.moneyLog.splice(i, 1);
+    b.paidMonth = null;
+    save(); renderAll();
+    toast(`Pagamento de ${b.name} desfeito.`);
+  }
+  $("billForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("billName").value.trim();
+    const raw = $("billAmount").value.trim();
+    const amount = raw === "" ? null : parseMoney(raw);
+    if (!name) { toast("Dê um nome à conta.", "red"); $("billName").focus(); return; }
+    if (amount !== null && (!isFinite(amount) || amount <= 0)) { toast("Valor inválido.", "red"); $("billAmount").focus(); return; }
+    state.bills.push({ id: uid(), name, amount, paidMonth: null, lastPaid: null, createdAt: Date.now() });
+    save(); e.target.reset(); $("billDetails").open = false;
+    renderBills(); toast("Conta adicionada.", "cyan");
+  });
 
   function renderMetas() {
     const rows = computeGoals();
@@ -1249,6 +1398,15 @@
     const act = el.dataset.act, id = el.dataset.id;
 
     if (act === "goto") { showTab(el.dataset.tab); return; }
+
+    if (act === "bill-pay") { payBill(id); return; }
+    if (act === "bill-undo") { undoBill(id); return; }
+    if (act === "del-bill") {
+      const b = findBill(id); if (!b) return;
+      if (!confirm(`Remover a conta "${b.name}"?`)) return;
+      state.bills = state.bills.filter((x) => x.id !== id);
+      save(); renderBills(); toast("Conta removida.", "red"); return;
+    }
 
     if (act === "seed") {
       seed(); save(); ui.col = 0; renderAll();
