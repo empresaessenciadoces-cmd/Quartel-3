@@ -554,13 +554,39 @@
     goals: []
   };
 
+  /* Protocolo Cavaleiro de Ouros: zonas e micropassos pré-carregados */
+  const KNIGHT_PROTOCOL = [
+    { title: "Ordem no Quarto", zone: "Quarto", steps: ["Varrer o chão", "Trocar o lençol", "Arrumar o sofá", "Passar pano no chão", "Limpar as paredes"] },
+    { title: "Ordem na Sala", zone: "Sala", steps: ["Arrumar a mesa", "Varrer o chão", "Passar pano no chão", "Arrumar o rack", "Tirar as caixas de lixo do chão", "Limpar as paredes"] },
+    { title: "Ordem na Cozinha", zone: "Cozinha", steps: ["Lavar os pratos", "Varrer o chão", "Recolher o lixo do chão", "Trocar a areia dos gatos", "Passar pano no chão"] }
+  ];
+  function genId() { return Math.random().toString(36).slice(2, 10); }
+  function addKnightProtocol(s) {
+    let added = 0;
+    KNIGHT_PROTOCOL.forEach((p) => {
+      if (s.missions.some((m) => m.zone === p.zone && m.title === p.title)) return;
+      s.missions.push({ id: genId(), title: p.title, zone: p.zone, col: 0, subs: p.steps.map((text) => ({ id: genId(), text, done: false })), focus: 0, createdAt: Date.now(), doneAt: null });
+      added++;
+    });
+    s.knightSeeded = true;
+    return added;
+  }
+  function freshState() {
+    const s = structuredClone(defaults);
+    addKnightProtocol(s);
+    return s;
+  }
+
   function hydrate(raw) {
-    if (!raw || typeof raw !== "object") return structuredClone(defaults);
+    if (!raw || typeof raw !== "object") return freshState();
     return { ...structuredClone(defaults), ...raw, timer: { ...defaults.timer, ...(raw.timer || {}) } };
   }
   function load() {
-    try { return hydrate(JSON.parse(localStorage.getItem(KEY))); }
-    catch { return structuredClone(defaults); }
+    let s;
+    try { s = hydrate(JSON.parse(localStorage.getItem(KEY))); }
+    catch { s = freshState(); }
+    if (!s.knightSeeded) addKnightProtocol(s);
+    return s;
   }
   let state = load();
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
@@ -605,6 +631,7 @@
     } catch {}
   }
   function alarm() {
+    unlockAudio();
     if (!audioCtx) return;
     [880, 1175, 1568, 880, 1175, 1568].forEach((f, i) => {
       const t = audioCtx.currentTime + i * 0.18;
@@ -695,7 +722,9 @@
       status.textContent = "Em combate"; status.className = "status on";
       startBtn.disabled = true; startBtn.textContent = "Missão em andamento";
       abortBtn.hidden = false;
-      $("timerHint").textContent = "Mantenha o foco. Você pode minimizar o app.";
+      $("timerHint").textContent = wakeLock
+        ? "Tela mantida acesa. O relógio segue contando mesmo em segundo plano."
+        : "Mantenha o foco. O relógio segue contando mesmo em segundo plano.";
       document.title = `${mm}:${ss} · O Moedor`;
     } else if (done) {
       status.textContent = "Concluído"; status.className = "status done";
@@ -712,8 +741,37 @@
     }
     $("dotMoedor").classList.toggle("show", !done);
   }
-  function startTick() { stopTick(); tick = setInterval(renderTimer, 250); }
-  function stopTick() { clearInterval(tick); }
+  /* Tempo sempre derivado de Date.now() vs. endsAt: o intervalo só redesenha,
+     e um timeout dedicado dispara a conclusão no instante exato de 00:00. */
+  let endTimer;
+  function startTick() {
+    stopTick(false);
+    tick = setInterval(renderTimer, 250);
+    if (state.timer.endsAt) endTimer = setTimeout(renderTimer, Math.max(0, state.timer.endsAt - Date.now()) + 15);
+    requestWakeLock();
+  }
+  function stopTick(release = true) {
+    clearInterval(tick);
+    clearTimeout(endTimer);
+    if (release) releaseWakeLock();
+  }
+
+  /* Wake Lock: mantém a tela acesa enquanto o Moedor estiver rodando */
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if (!("wakeLock" in navigator) || wakeLock || document.hidden || !state.timer.endsAt) return;
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; if (state.timer.endsAt) renderTimer(); });
+      if (!state.timer.endsAt) releaseWakeLock();
+      renderTimer();
+    } catch { wakeLock = null; }
+  }
+  function releaseWakeLock() {
+    const lock = wakeLock;
+    wakeLock = null;
+    if (lock) lock.release().catch(() => {});
+  }
 
   function renderTarget() {
     const sel = $("targetSelect");
@@ -772,7 +830,14 @@
     state.timer.endsAt = null; save(); stopTick(); renderTimer();
     toast("Missão abortada.", "red");
   });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) renderTimer(); });
+  function resyncTimer() {
+    if (document.hidden) return;
+    renderTimer();
+    if (state.timer.endsAt) startTick();
+  }
+  document.addEventListener("visibilitychange", resyncTimer);
+  window.addEventListener("pageshow", resyncTimer);
+  window.addEventListener("focus", resyncTimer);
 
   /* MISSÕES */
   function missionCard(m) {
@@ -1172,7 +1237,7 @@
   $("resetBtn").addEventListener("click", () => {
     if (!confirm("Zerar TODO o progresso? Essa ação não pode ser desfeita.")) return;
     stopTick();
-    state = structuredClone(defaults);
+    state = freshState();
     save(); renderAll();
     toast("Progresso zerado. Nova campanha iniciada.", "red");
   });
