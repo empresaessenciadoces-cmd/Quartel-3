@@ -1,4 +1,5 @@
 "use client"
+ //forcar atualização 
 
 import React, { useState, useEffect, useRef } from "react"
 import { Play, Pause, RotateCcw, Plus, Trash2, Edit2, Check, Trophy, Sparkles, Volume2, Coffee } from "lucide-react"
