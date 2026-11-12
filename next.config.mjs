@@ -6,6 +6,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: '/', destination: '/quartel.html' }],
+    }
+  },
   async headers() {
     return [
       {
