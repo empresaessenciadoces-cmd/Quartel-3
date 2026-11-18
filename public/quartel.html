@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Quartel" />
 <link rel="manifest" href='data:application/manifest+json,{"name":"Quartel General","short_name":"Quartel","display":"standalone","background_color":"%230a0e13","theme_color":"%230a0e13","start_url":"."}' />
 <title>Quartel General — Comando Pessoal</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>
   :root {
     --bg: #0a0e13;
@@ -98,6 +99,15 @@
   .btn-cyan { background: var(--cyan); color: #04201a; }
   .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
   .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(239,91,91,0.45); }
+  .btn-green { background: #3ecf6e; color: #04170c; box-shadow: 0 6px 24px -8px rgba(62,207,110,0.6); }
+  .bill { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .bill:last-child { border-bottom: 0; }
+  .bill-name { font-size: 15px; word-break: break-word; }
+  .bill-name small { display: block; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .bill-side { display: flex; gap: 6px; align-items: center; flex: none; }
+  .bill-side .btn { width: auto; min-height: 44px; padding: 0 16px; font-size: 14px; }
+  .bill-side .icon-btn { min-height: 44px; min-width: 44px; }
+  .bill-paid { font-family: var(--mono); font-size: 12px; color: var(--cyan); }
   .btn:disabled { background: #2a323d; color: #6b7685; box-shadow: none; cursor: not-allowed; border-color: transparent; }
   .btn-xl { min-height: 64px; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 22px; }
   .btn-sm { min-height: 44px; font-size: 14px; padding: 0 12px; width: auto; }
@@ -191,6 +201,10 @@
   .gbar i { display: block; height: 100%; background: linear-gradient(90deg, rgba(52,212,177,0.6), var(--cyan)); border-radius: 6px; transition: width 0.5s ease; }
   .gbar.pa { height: 6px; margin-top: 4px; }
   .gbar.pa i { background: var(--gold); }
+  .pa-pencil { background: none; border: 0; padding: 2px; margin-left: 4px; color: inherit; opacity: 0.55; cursor: pointer; line-height: 0; vertical-align: middle; }
+  .pa-pencil:hover { opacity: 1; color: var(--gold); }
+  .pa-edit { display: flex; gap: 8px; align-items: center; margin: 4px 0 0; }
+  .pa-edit input { width: 90px; min-height: 36px; }
   .goal-meta { display: flex; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .goal-meta .ok { color: var(--cyan); }
   .goal-actions { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; margin-top: 10px; }
@@ -225,6 +239,11 @@
   .mission.c2 .bar i { background: var(--cyan); }
   .next { font-size: 13px; color: var(--text); margin: 10px 0 0; }
   .next span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-right: 6px; }
+  .sub-pick { background: none; border: 0; padding: 0; color: inherit; font: inherit; line-height: inherit; text-align: left; cursor: pointer; }
+  .sub-pick.is-active { color: var(--gold); }
+  .check.is-done .sub-pick { text-decoration: line-through; opacity: 0.5; }
+  .grind-row { display: flex; gap: 6px; flex: 1; }
+  .grind-row .btn { flex: 1; min-height: 44px; padding: 0 6px; font-size: 12px; white-space: nowrap; }
   .m-details { margin-top: 10px; border-top: 1px dashed var(--line); }
   .m-details > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
   .m-details > summary::-webkit-details-marker { display: none; }
@@ -263,6 +282,8 @@
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
+  <meta name="supabase-url" content="https://waqlenukzzptvinqbfiq.supabase.co" />
+  <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhcWxlbnVrenpwdHZpbnFiZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0NDE2NDgsImV4cCI6MjExMDAxNzY0OH0.V71GGds-vgl5iEbLmH-yz70sU9Tp0pDwmaYZb1M4_o0" />
 </head>
 <body>
 <div class="app">
@@ -299,6 +320,11 @@
       </div>
 
       <div class="card timer-wrap">
+        <div class="seg" role="group" aria-label="Modo do cronômetro" id="modeSeg">
+          <button type="button" data-mode="foco" aria-pressed="true"><b>5 min</b>Foco Rápido</button>
+          <button type="button" data-mode="micro" aria-pressed="false"><b>20 min</b>Microtarefa</button>
+          <button type="button" data-mode="descanso" aria-pressed="false"><b>15 min</b>Descanso</button>
+        </div>
         <div class="ring">
           <svg viewBox="0 0 120 120" aria-hidden="true">
             <circle class="ticks" cx="60" cy="60" r="56"></circle>
@@ -315,7 +341,7 @@
           <button class="btn btn-gold btn-xl" id="startBtn" type="button">Iniciar Missão</button>
           <button class="btn btn-danger" id="abortBtn" type="button" hidden>Abortar missão</button>
         </div>
-        <p class="hint" id="timerHint">Disponível 1 vez por dia.</p>
+        <p class="hint" id="timerHint">Sem limite diário. Use quantas vezes quiser.</p>
       </div>
 
       <div class="stats">
@@ -389,6 +415,10 @@
             <input id="moneyInput" inputmode="decimal" autocomplete="off" placeholder="0,00" />
           </div>
         </div>
+        <div class="field">
+          <label for="moneyDesc">Descrição <span style="text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input id="moneyDesc" maxlength="60" placeholder="Ex: Mercado, Bônus..." autocomplete="off" />
+        </div>
         <div class="chips" aria-label="Valores rápidos">
           <button type="button" class="chip" data-quick="10">10</button>
           <button type="button" class="chip" data-quick="50">50</button>
@@ -400,6 +430,36 @@
           <button type="button" class="btn btn-cyan" id="addBtn">+ Depositar</button>
         </div>
       </form>
+
+      <div class="card">
+        <div class="section-row">
+          <h2 class="section-title">A pagar</h2>
+          <span class="tag-mono" id="billCount">0 contas</span>
+        </div>
+        <div id="billList"></div>
+        <details class="add" id="billDetails">
+          <summary class="btn btn-ghost">+ Nova conta</summary>
+          <form id="billForm" novalidate>
+            <div class="field">
+              <label for="billName">Nome da conta</label>
+              <input id="billName" maxlength="40" placeholder="Ex: Água" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="billValue">Valor mensal</label>
+              <div class="input-prefix">
+                <span>R$</span>
+                <input id="billValue" inputmode="decimal" placeholder="0,00" autocomplete="off" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="billDate">Data de vencimento / pagamento <span style="text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <input id="billDate" type="date" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-green">Cadastrar conta</button>
+          </form>
+        </details>
+        <p class="hint">O botão verde paga a conta do mês com o tesouro e zera no mês seguinte.</p>
+      </div>
 
       <div class="card">
         <div class="section-row">
@@ -487,6 +547,26 @@
       <div class="stats" id="dataStats"></div>
 
       <div class="card">
+        <h2 class="section-title">Histórico de sessões</h2>
+        <ul class="money-log" id="sessionLog"><li class="empty" style="justify-content:center">Nenhuma sessão concluída ainda.</li></ul>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Notificações Push</h2>
+        <p class="hint" style="margin:0 0 12px">Receba o aviso das contas a pagar mesmo com o navegador fechado. Cole as chaves da sua conta OneSignal e ative neste aparelho.</p>
+        <div class="field">
+          <label for="osAppId">OneSignal App ID</label>
+          <input id="osAppId" maxlength="64" placeholder="Ex: 8d4a1b2c-..." autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="osRestKey">OneSignal REST API Key</label>
+          <input id="osRestKey" maxlength="128" placeholder="Chave REST da conta" autocomplete="off" />
+        </div>
+        <button type="button" class="btn btn-cyan" id="osEnableBtn">Ativar Push neste Celular</button>
+        <p class="hint" id="osStatus" style="margin:8px 0 0"></p>
+      </div>
+
+      <div class="card">
         <h2 class="section-title">Exportar backup</h2>
         <p class="hint" style="margin:0 0 12px">Todos os dados ficam salvos neste navegador. Faça backups periódicos.</p>
         <div class="row">
@@ -539,7 +619,13 @@
 <script>
 (() => {
   const KEY = "qg-state-v1";
-  const DURATION = 5 * 60 * 1000;
+  const MODES = {
+    foco: { label: "Foco Rápido", mins: 5, pa: 1 },
+    micro: { label: "Microtarefa", mins: 20, pa: 3 },
+    p15: { label: "Missão 15 min", mins: 15, pa: 2 },
+    descanso: { label: "Descanso", mins: 15, pa: 0 }
+  };
+  const modeMs = (m) => (MODES[m] || MODES.foco).mins * 60 * 1000;
   const CIRC = 2 * Math.PI * 48;
   const COLS = ["A Fazer", "Em Andamento", "Concluído"];
   const DEFAULT_ZONES = ["Cozinha", "Sala", "Quarto", "Banheiro", "Lavanderia", "Escritório", "Garagem"];
@@ -547,11 +633,17 @@
   const defaults = {
     money: 0,
     pa: 0,
-    timer: { endsAt: null, lastDoneDate: null, sessions: 0, streak: 0, best: 0, targetId: null },
+    timer: { endsAt: null, sessions: 0, streak: 0, best: 0, targetId: null, mode: "foco", activeSubId: null },
+    history: [],
     moneyLog: [],
     loot: [],
     missions: [],
-    goals: []
+    goals: [],
+    bills: [
+      { id: "b-laila", name: "Laila", value: 0, lastPaid: null },
+      { id: "b-app", name: "App", value: 0, lastPaid: null },
+      { id: "b-mae", name: "Mãe", value: 0, lastPaid: null }
+    ]
   };
 
   /* Protocolo Cavaleiro de Ouros: zonas e micropassos pré-carregados */
@@ -589,16 +681,46 @@
     return s;
   }
   let state = load();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+  let isInitialLoadDone = false;
+  const save = () => {
+    if (!isInitialLoadDone) return;
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+  };
 
-  const ui = { col: 0, zone: "all", open: new Set() };
+  /* Fetch inicial do perfil no Supabase: bloqueia qualquer salvamento até terminar.
+     Se vier vazio/erro e já há dados locais, preserva os locais. */
+  const SUPA_URL = document.querySelector('meta[name="supabase-url"]')?.content || "";
+  const SUPA_KEY = document.querySelector('meta[name="supabase-anon-key"]')?.content || "";
+  async function fetchProfile() {
+    if (!SUPA_URL || !SUPA_KEY) { isInitialLoadDone = true; return; }
+    try {
+      const res = await fetch(`${SUPA_URL}/rest/v1/app_state?id=eq.1&select=state_data`, {
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = await res.json();
+      const remote = rows && rows.length && rows[0].state_data;
+      if (remote && typeof remote === "object" && Object.keys(remote).length) {
+        state = hydrate(remote);
+        if (!state.knightSeeded) addKnightProtocol(state);
+        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+      }
+    } catch (err) {
+      console.warn("fetchProfile falhou, mantendo dados locais:", err);
+    } finally {
+      isInitialLoadDone = true;
+      renderAll();
+    }
+  }
+
+  const ui = { col: 0, zone: "all", open: new Set(), editPa: null };
 
   const $ = (id) => document.getElementById(id);
   const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
   const fmt = (v) => brl.format(v);
   const round2 = (v) => Math.round(v * 100) / 100;
+  const calIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 14v4M10 16h4"/></svg>';
   const todayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return todayKey(d); };
   const parseMoney = (s) => {
     if (!s) return NaN;
     let t = String(s).trim().replace(/[^\d,.-]/g, "");
@@ -610,6 +732,7 @@
   const findMission = (id) => state.missions.find((m) => m.id === id);
   const findLoot = (id) => state.loot.find((l) => l.id === id);
   const trashIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  const pencilIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
 
   /* Toast */
   let toastT;
@@ -656,15 +779,11 @@
   }
 
   /* HUD */
-  function currentStreak() {
-    const t = state.timer;
-    return t.lastDoneDate === todayKey() || t.lastDoneDate === yesterdayKey() ? t.streak : 0;
-  }
   function renderHud() {
     $("hudMoney").textContent = fmt(state.money);
     $("hudPa").textContent = `${state.pa} PA`;
-    const streak = currentStreak();
-    $("streak").textContent = `Sequência ${streak}d`;
+    const streak = state.timer.streak;
+    $("streak").textContent = `Sequência ${streak}`;
     $("statSessions").textContent = state.timer.sessions;
     $("statStreak").textContent = streak;
     $("statBest").textContent = state.timer.best;
@@ -678,44 +797,57 @@
 
   function completeMission(withSound) {
     const t = state.timer;
-    t.streak = t.lastDoneDate === yesterdayKey() ? t.streak + 1 : 1;
-    t.best = Math.max(t.best, t.streak);
-    t.lastDoneDate = todayKey();
-    t.sessions += 1;
+    const mode = MODES[t.mode] || MODES.foco;
     t.endsAt = null;
-    state.pa += 1;
-    const m = t.targetId && findMission(t.targetId);
-    if (m) {
-      m.focus = (m.focus || 0) + 1;
-      if (m.col === 0) m.col = 1;
+    let msg;
+    if (t.mode === "descanso") {
+      msg = "Descanso concluído. De volta ao combate!";
+    } else {
+      t.streak += 1;
+      t.best = Math.max(t.best, t.streak);
+      t.sessions += 1;
+      state.pa += mode.pa;
+      const m = t.targetId && findMission(t.targetId);
+      const entry = { id: uid(), mission: m ? m.title : "", mode: mode.label, mins: mode.mins, pa: mode.pa, at: Date.now() };
+      state.history.unshift(entry);
+      state.history = state.history.slice(0, 200);
+      mirrorSession(entry);
+      if (m) {
+        m.focus = (m.focus || 0) + 1;
+        if (m.col === 0) m.col = 1;
+      }
+      msg = m ? `Missão cumprida em "${m.title}"! +${mode.pa} PA` : mode.pa > 1 ? `${mode.label} cumprida! +${mode.pa} PA adicionados ao inventário` : "Missão cumprida! +1 PA adicionado ao inventário";
     }
     save();
     if (withSound) alarm();
     renderAll();
     bump($("hudPa"));
-    toast(m ? `Missão cumprida em "${m.title}"! +1 PA` : "Missão cumprida! +1 PA adicionado ao inventário", "gold");
+    toast(msg, "gold");
   }
 
   function renderTimer() {
     const t = state.timer;
-    const done = t.lastDoneDate === todayKey();
+    const dur = modeMs(t.mode);
     const running = !!t.endsAt;
     const startBtn = $("startBtn"), abortBtn = $("abortBtn"), status = $("timerStatus");
-    let remaining = DURATION;
+    let remaining = dur;
+
+    document.querySelectorAll("#modeSeg button").forEach((b) => {
+      b.setAttribute("aria-pressed", String(b.dataset.mode === t.mode));
+      b.disabled = running;
+    });
 
     if (running) {
       remaining = Math.max(0, t.endsAt - Date.now());
       if (remaining === 0) { stopTick(); completeMission(true); return; }
-    } else if (done) {
-      remaining = 0;
     }
 
     const secs = Math.ceil(remaining / 1000);
     const mm = String(Math.floor(secs / 60)).padStart(2, "0");
     const ss = String(secs % 60).padStart(2, "0");
     $("timeText").textContent = `${mm}:${ss}`;
-    ring.style.strokeDashoffset = CIRC * (1 - remaining / DURATION);
-    ring.style.stroke = done && !running ? "var(--cyan)" : "var(--gold)";
+    ring.style.strokeDashoffset = CIRC * (1 - remaining / dur);
+    ring.style.stroke = "var(--gold)";
     $("targetSelect").disabled = running;
 
     if (running) {
@@ -726,20 +858,14 @@
         ? "Tela mantida acesa. O relógio segue contando mesmo em segundo plano."
         : "Mantenha o foco. O relógio segue contando mesmo em segundo plano.";
       document.title = `${mm}:${ss} · O Moedor`;
-    } else if (done) {
-      status.textContent = "Concluído"; status.className = "status done";
-      startBtn.disabled = true; startBtn.textContent = "Território conquistado hoje";
-      abortBtn.hidden = true;
-      $("timerHint").textContent = "Nova missão liberada amanhã à meia-noite.";
-      document.title = "Quartel General — Comando Pessoal";
     } else {
       status.textContent = "Pronto"; status.className = "status";
       startBtn.disabled = false; startBtn.textContent = "Iniciar Missão";
       abortBtn.hidden = true;
-      $("timerHint").textContent = "Disponível 1 vez por dia.";
+      $("timerHint").textContent = t.mode === "descanso" ? "Pausa sem recompensa. Use à vontade." : "Sem limite diário. Use quantas vezes quiser.";
       document.title = "Quartel General — Comando Pessoal";
     }
-    $("dotMoedor").classList.toggle("show", !done);
+    $("dotMoedor").classList.remove("show");
   }
   /* Tempo sempre derivado de Date.now() vs. endsAt: o intervalo só redesenha,
      e um timeout dedicado dispara a conclusão no instante exato de 00:00. */
@@ -798,14 +924,14 @@
       return;
     }
     const total = target.subs.length, doneN = target.subs.filter((s) => s.done).length;
-    const next = target.subs.find((s) => !s.done);
+    const active = target.subs.find((s) => s.id === t.activeSubId);
     info.innerHTML = `<div class="target-mission">
       <div class="m-tags"><span class="zone">${esc(target.zone || "Geral")}</span><span class="badge ${target.col === 1 ? "ready" : "locked"}">${COLS[target.col]}</span></div>
       <h3>${esc(target.title)}</h3>
-      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${target.focus || 0} × 5 min</span></div>
+      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${target.focus || 0} × sessões</span></div>
       <div class="bar"><i style="width:${total ? (doneN / total) * 100 : 0}%;background:var(--gold)"></i></div>
-      ${next ? `<div class="next-step"><div><div class="k">Próximo micropasso</div><p>${esc(next.text)}</p></div><button class="btn btn-ghost btn-sm" data-act="next-done" data-id="${target.id}" data-sid="${next.id}">Feito</button></div>`
-             : total ? `<p class="hint">Todos os micropassos concluídos.</p>` : `<p class="hint">Sem micropassos. Adicione no quadro de Missões.</p>`}
+      ${active ? `<div class="next-step"><div><div class="k">Micropasso no alvo</div><p>${esc(active.text)}</p></div>${active.done ? "" : `<button class="btn btn-ghost btn-sm" data-act="next-done" data-id="${target.id}" data-sid="${active.id}">Feito</button>`}</div>`
+             : total ? `<p class="hint">Toque em um micropasso na checklist (aba Missões) para definir o alvo.</p>` : `<p class="hint">Sem micropassos. Adicione no quadro de Missões.</p>`}
     </div>`;
   }
 
@@ -815,15 +941,21 @@
     save(); renderTarget(); renderMissoes();
   });
 
+  $("modeSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-mode]");
+    if (!b || state.timer.endsAt) return;
+    state.timer.mode = b.dataset.mode;
+    save(); renderTimer();
+  });
   $("startBtn").addEventListener("click", () => {
-    if (state.timer.lastDoneDate === todayKey() || state.timer.endsAt) return;
+    if (state.timer.endsAt) return;
     unlockAudio();
-    state.timer.endsAt = Date.now() + DURATION;
-    const m = state.timer.targetId && findMission(state.timer.targetId);
+    state.timer.endsAt = Date.now() + modeMs(state.timer.mode);
+    const m = state.timer.targetId && state.timer.mode !== "descanso" && findMission(state.timer.targetId);
     if (m && m.col === 0) m.col = 1;
     save();
     renderTimer(); renderTarget(); renderMissoes(); startTick();
-    toast(m ? `Atacando: ${m.title}` : "Missão iniciada. 5 minutos no relógio.", "gold");
+    toast(m ? `Atacando: ${m.title}` : `${MODES[state.timer.mode].label} iniciada. ${MODES[state.timer.mode].mins} minutos no relógio.`, "gold");
   });
   $("abortBtn").addEventListener("click", () => {
     if (!confirm("Abortar a missão? Você não receberá o PA.")) return;
@@ -844,21 +976,24 @@
     const total = m.subs.length, doneN = m.subs.filter((s) => s.done).length;
     const pct = total ? (doneN / total) * 100 : m.col === 2 ? 100 : 0;
     const isTarget = state.timer.targetId === m.id;
-    const next = m.subs.find((s) => !s.done);
     const open = ui.open.has(m.id);
+    const busy = !!state.timer.endsAt;
     const middle = m.col === 2
       ? `<div class="won-date">Concluída ${m.doneAt ? new Date(m.doneAt).toLocaleDateString("pt-BR") : ""}</div>`
-      : `<button class="btn ${isTarget ? "btn-ghost" : "btn-gold"}" data-act="grind" data-id="${m.id}">${isTarget ? "No Moedor" : "Moer 5 min"}</button>`;
+      : `<div class="grind-row">
+          <button class="btn ${isTarget ? "btn-ghost" : "btn-gold"}" data-act="grind" data-id="${m.id}" data-mins="5" ${busy ? "disabled" : ""}>5 min</button>
+          <button class="btn btn-ghost" data-act="grind" data-id="${m.id}" data-mins="15" ${busy ? "disabled" : ""}>15 min</button>
+          <button class="btn btn-ghost" data-act="grind" data-id="${m.id}" data-mins="20" ${busy ? "disabled" : ""}>20 min</button>
+        </div>`;
     return `<article class="mission c${m.col} ${isTarget && m.col !== 2 ? "targeted" : ""}">
       <div class="m-tags"><span class="zone">${esc(m.zone || "Geral")}</span>${isTarget && m.col !== 2 ? '<span class="badge ready">Alvo do Moedor</span>' : ""}</div>
       <h3 class="m-title">${esc(m.title)}</h3>
-      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${m.focus || 0} × 5 min</span></div>
+      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${m.focus || 0} × sessões</span></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      ${next && m.col !== 2 ? `<p class="next"><span>Próximo</span>${esc(next.text)}</p>` : ""}
       <details class="m-details" data-card="${m.id}" ${open ? "open" : ""}>
         <summary>Checklist · ${doneN}/${total}</summary>
         ${total ? `<ul class="checklist">${m.subs.map((s) => `<li>
-          <label class="check ${s.done ? "is-done" : ""}"><input type="checkbox" data-sub="${m.id}" data-sid="${s.id}" ${s.done ? "checked" : ""} /><span>${esc(s.text)}</span></label>
+          <label class="check ${s.done ? "is-done" : ""}"><input type="checkbox" data-sub="${m.id}" data-sid="${s.id}" ${s.done ? "checked" : ""} /><button type="button" class="sub-pick ${state.timer.activeSubId === s.id ? "is-active" : ""}" data-act="set-sub" data-id="${m.id}" data-sid="${s.id}" aria-label="Definir como alvo do Moedor">${state.timer.activeSubId === s.id ? "◈ " : ""}${esc(s.text)}</button></label>
           <button class="mini-x" type="button" data-act="del-sub" data-id="${m.id}" data-sid="${s.id}" aria-label="Remover micropasso ${esc(s.text)}">×</button>
         </li>`).join("")}</ul>` : `<p class="hint" style="margin:0 0 8px">Nenhum micropasso ainda.</p>`}
         <form class="addsub" data-addsub="${m.id}" novalidate>
@@ -949,6 +1084,19 @@
   });
 
   document.addEventListener("submit", (e) => {
+    const pf = e.target.closest("[data-paedit]");
+    if (pf) {
+      e.preventDefault();
+      const item = findLoot(pf.dataset.paedit);
+      if (!item) return;
+      const pa = parseInt(pf.elements.pa.value, 10);
+      if (!Number.isInteger(pa) || pa < 0) { toast("Custo em PA inválido.", "red"); return; }
+      item.pa = pa;
+      ui.editPa = null;
+      save(); renderVitrine(); renderMetas();
+      toast("Custo em PA atualizado.", "cyan");
+      return;
+    }
     const f = e.target.closest("[data-addsub]");
     if (!f) return;
     e.preventDefault();
@@ -1004,11 +1152,142 @@
         const d = new Date(e.at);
         const when = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
         const cls = e.amount >= 0 ? "plus" : "minus";
-        const label = e.type === "loot" ? `Resgate: ${esc(e.label)}` : e.amount >= 0 ? "Depósito" : "Retirada";
+        const label = e.type === "loot" ? `Resgate: ${esc(e.label)}` : e.type === "bill" ? `Conta: ${esc(e.label)}` : e.label ? `${e.amount >= 0 ? "Depósito" : "Retirada"}: ${esc(e.label)}` : e.amount >= 0 ? "Depósito" : "Retirada";
         return `<li><div><div>${label}</div><div class="when">${when}</div></div><div class="val ${cls}">${e.amount >= 0 ? "+" : "−"} ${fmt(Math.abs(e.amount))}</div></li>`;
       }).join("");
     }
     renderMetas();
+    renderBills();
+  }
+
+  const monthKey = () => todayKey().slice(0, 7);
+
+  function renderBills() {
+    const mk = monthKey();
+    const total = state.bills.reduce((s, b) => s + (b.value || 0), 0);
+    $("billCount").textContent = `${state.bills.length} ${state.bills.length === 1 ? "conta" : "contas"} · ${fmt(round2(total))}/mês`;
+    if (!state.bills.length) {
+      $("billList").innerHTML = '<p class="empty">Nenhuma conta recorrente. Cadastre com o botão abaixo.</p>';
+      return;
+    }
+    const tk = todayKey();
+    $("billList").innerHTML = state.bills.map((b) => {
+      const paid = b.lastPaid === mk;
+      let dueTag = "";
+      if (b.dueDate) {
+        const [y, m, d] = b.dueDate.split("-").map(Number);
+        const dd = new Date(y, m - 1, d);
+        const day = String(d).padStart(2, "0");
+        const overdue = b.dueDate < tk && !paid;
+        const today = b.dueDate === tk && !paid;
+        const cls = overdue ? "overdue" : today ? "today" : "";
+        const label = overdue ? `Venceu em ${day}/${String(m).padStart(2, "0")} — atrasada` : today ? `Vence hoje (${day}/${String(m).padStart(2, "0")})` : `Vence dia ${day}/${String(m).padStart(2, "0")}`;
+        dueTag = `<span class="due-tag ${cls}">${label}</span>`;
+      }
+      const side = paid
+        ? '<span class="bill-paid">Pago neste mês</span>'
+        : `<div class="bill-side">
+            <button class="btn btn-green" data-act="pay-bill" data-id="${b.id}" ${b.value > 0 ? "" : "disabled"} title="${b.value > 0 ? `Pagar ${fmt(b.value)}` : "Conta sem valor definido"}">Pagar</button>
+            ${b.dueDate ? `<button class="icon-btn" data-act="bill-ics" data-id="${b.id}" aria-label="Baixar lembrete de calendário para ${esc(b.name)}" title="Baixar lembrete (.ics) para ${esc(b.name)}">${calIcon}</button>` : ""}
+            <button class="icon-btn" data-act="del-bill" data-id="${b.id}" aria-label="Excluir conta ${esc(b.name)}">${trashIcon}</button>
+          </div>`;
+      return `<div class="bill ${overdueCls(b, tk, paid)}">
+        <div class="bill-name">${esc(b.name)}<small>${b.value > 0 ? `${fmt(b.value)}/mês` : "sem valor · exclua e cadastre com o valor"}${dueTag ? ` · ${dueTag}` : ""}</small></div>
+        ${side}
+      </div>`;
+    }).join("");
+  }
+  function overdueCls(b, tk, paid) {
+    if (!b.dueDate || paid) return "";
+    if (b.dueDate < tk) return "is-overdue";
+    if (b.dueDate === tk) return "is-due-today";
+    return "";
+  }
+
+  /* Lembrete .ics: gera evento no dia do vencimento com alarme, funciona sem o app aberto */
+  function icsStamp(d) {
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}T090000`;
+  }
+  function downloadBillIcs(b) {
+    const [y, m, d] = b.dueDate.split("-").map(Number);
+    const end = new Date(y, m - 1, d);
+    end.setDate(end.getDate() + 1);
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Quartel General//Contas//PT-BR",
+      "BEGIN:VEVENT",
+      `UID:${b.id}-${b.dueDate}@quartel-general`,
+      `DTSTAMP:${icsStamp(new Date())}Z`,
+      `DTSTART;VALUE=DATE:${icsStamp(new Date(y, m - 1, d))}`,
+      `DTEND;VALUE=DATE:${icsStamp(end)}`,
+      `SUMMARY:Pagar: ${b.name}${b.value > 0 ? ` (${fmt(b.value)})` : ""}`,
+      "DESCRIPTION:Lembrete do Quartel General",
+      "BEGIN:VALARM",
+      "TRIGGER:-PT9H",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:Pagar: ${b.name}`,
+      "END:VALARM",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\r\n");
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `lembrete-${b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.ics`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(`Lembrete de ${b.name} baixado. Abra o arquivo para agendar no calendário.`, "cyan");
+  }
+
+  /* Banner + notificação nativa para contas que vencem hoje */
+  function dueTodayBills() {
+    const tk = todayKey();
+    const mk = monthKey();
+    return state.bills.filter((b) => b.dueDate === tk && b.lastPaid !== mk);
+  }
+  function renderDueBanner() {
+    const due = dueTodayBills();
+    let banner = $("dueBanner");
+    if (!due.length) {
+      if (banner) banner.remove();
+      localStorage.removeItem("qg-notified-" + todayKey());
+      return;
+    }
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "dueBanner";
+      banner.className = "due-banner";
+      banner.setAttribute("role", "alert");
+      const wrap = document.querySelector("main .wrap") || document.querySelector("main") || document.body;
+      wrap.prepend(banner);
+    }
+    const names = due.map((b) => b.name).join(", ");
+    banner.innerHTML = `<div class="due-banner-text"><b>Atenção:</b> ${due.length === 1 ? "1 conta vence hoje" : `${due.length} contas vencem hoje`}: ${esc(names)}.</div>
+      <div class="due-banner-actions">
+        <button type="button" class="btn btn-ghost btn-sm" data-act="goto" data-tab="cofre">Ver no Cofre</button>
+        ${("Notification" in window) && Notification.permission !== "granted" ? '<button type="button" class="btn btn-gold btn-sm" id="notifyBtn">Ativar notificações</button>' : ""}
+      </div>`;
+    const nb = $("notifyBtn");
+    if (nb) nb.addEventListener("click", async () => {
+      const perm = await Notification.requestPermission();
+      if (perm === "granted") { renderDueBanner(); notifyDue(); }
+      else toast("Permissão de notificação negada.", "red");
+    });
+    if (("Notification" in window) && Notification.permission === "granted") notifyDue();
+  }
+  function notifyDue() {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const stamp = "qg-notified-" + todayKey();
+    if (localStorage.getItem(stamp)) return;
+    const due = dueTodayBills();
+    if (!due.length) return;
+    try {
+      new Notification("Quartel General", {
+        body: `Conta${due.length > 1 ? "s" : ""} vencendo hoje: ${due.map((b) => b.name).join(", ")}.`,
+        tag: "qg-due-" + todayKey()
+      });
+      localStorage.setItem(stamp, "1");
+    } catch {}
   }
 
   function renderMetas() {
@@ -1094,16 +1373,33 @@
     toast("Meta criada no Cofre.", "cyan");
   });
 
+  $("billForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("billName").value.trim();
+    const value = parseMoney($("billValue").value);
+    if (!name) { toast("Dê um nome à conta.", "red"); $("billName").focus(); return; }
+    if (!isFinite(value) || value <= 0) { toast("Informe o valor mensal da conta.", "red"); $("billValue").focus(); return; }
+    state.bills.push({ id: uid(), name, value, lastPaid: null, dueDate: $("billDate").value || null });
+    save();
+    e.target.reset();
+    $("billDetails").open = false;
+    renderBills();
+    toast("Conta adicionada em A pagar.", "cyan");
+    if (state.bills[state.bills.length - 1].dueDate) scheduleBillPush(state.bills[state.bills.length - 1]);
+  });
+
   function moveMoney(sign) {
     const input = $("moneyInput");
     const v = parseMoney(input.value);
     if (!isFinite(v) || v <= 0) { toast("Informe um valor válido.", "red"); input.focus(); return; }
     const amount = sign * v;
+    const desc = $("moneyDesc").value.trim();
     state.money = round2(state.money + amount);
-    state.moneyLog.unshift({ id: uid(), amount, type: "manual", at: Date.now() });
+    state.moneyLog.unshift({ id: uid(), amount, type: "manual", label: desc || null, at: Date.now() });
     state.moneyLog = state.moneyLog.slice(0, 100);
     save();
     input.value = "";
+    $("moneyDesc").value = "";
     renderAll(); bump($("hudMoney"));
     toast(sign > 0 ? `+ ${fmt(v)} no cofre` : `− ${fmt(v)} do cofre`, sign > 0 ? "cyan" : "red");
   }
@@ -1151,7 +1447,9 @@
       <div class="loot-head"><h3 class="loot-name">${esc(item.name)}</h3><span class="badge ${ready ? "ready" : "locked"}">${ready ? "Liberado" : "Bloqueado"}</span></div>
       <div class="costs">
         <div class="cost money ${haveMoney ? "ok" : "miss"}"><div class="k">Custo R$</div><div class="v">${fmt(item.money)}</div><div class="bar"><i style="width:${pm}%"></i></div></div>
-        <div class="cost pa ${havePa ? "ok" : "miss"}"><div class="k">Custo PA</div><div class="v">${item.pa} PA</div><div class="bar"><i style="width:${pp}%"></i></div></div>
+        <div class="cost pa ${havePa ? "ok" : "miss"}"><div class="k">Custo PA</div>${ui.editPa === item.id
+          ? `<form class="pa-edit" data-paedit="${item.id}" novalidate><input name="pa" type="number" min="0" step="1" value="${item.pa}" inputmode="numeric" aria-label="Novo custo em PA para ${esc(item.name)}" /><button class="btn btn-gold btn-sm" type="submit">Salvar</button><button class="btn btn-ghost btn-sm" type="button" data-act="cancel-pa" aria-label="Cancelar edição">×</button></form>`
+          : `<div class="v">${item.pa} PA<button type="button" class="pa-pencil" data-act="edit-pa" data-id="${item.id}" aria-label="Editar custo em PA de ${esc(item.name)}">${pencilIcon}</button></div>`}<div class="bar"><i style="width:${pp}%"></i></div></div>
       </div>
       <div class="loot-actions">
         <button class="btn btn-gold" data-act="buy" data-id="${item.id}" ${ready ? "" : "disabled"}>${ready ? "Resgatar" : "Bloqueado"}</button>
@@ -1204,6 +1502,16 @@
       [state.loot.filter((l) => l.wonAt).length, "Loot"]
     ];
     $("dataStats").innerHTML = items.map(([v, k]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+    const log = $("sessionLog");
+    if (!state.history || !state.history.length) {
+      log.innerHTML = '<li class="empty" style="justify-content:center">Nenhuma sessão concluída ainda.</li>';
+    } else {
+      log.innerHTML = state.history.slice(0, 30).map((e) => {
+        const d = new Date(e.at);
+        const when = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        return `<li><div><div>${esc(e.mission || e.mode)}<small>${esc(e.mode)} · ${e.mins} min</small></div><div class="when">${when}</div></div><div class="val plus">+${e.pa} PA</div></li>`;
+      }).join("");
+    }
   }
 
   const backupText = () => JSON.stringify({ app: "quartel-general", version: 2, exportedAt: new Date().toISOString(), ...state }, null, 2);
@@ -1255,12 +1563,28 @@
       toast("Plano de exemplo carregado.", "cyan"); return;
     }
 
+    if (act === "set-sub") {
+      e.preventDefault();
+      const m = findMission(id);
+      const s = m && m.subs.find((x) => x.id === el.dataset.sid);
+      if (!s) return;
+      state.timer.activeSubId = state.timer.activeSubId === s.id ? null : s.id;
+      save(); renderMissoes(); renderTarget();
+      return;
+    }
+
     if (act === "grind") {
       const m = findMission(id); if (!m) return;
-      if (state.timer.endsAt && state.timer.targetId !== m.id) { toast("Já há uma missão em andamento no Moedor.", "red"); return; }
+      if (state.timer.endsAt) { if (state.timer.targetId !== m.id) toast("Já há uma missão em andamento no Moedor.", "red"); return; }
       state.timer.targetId = m.id;
-      save(); renderAll(); showTab("moedor");
-      toast(state.timer.lastDoneDate === todayKey() ? "Alvo definido. O Moedor libera amanhã." : `Alvo travado: ${m.title}`, "gold");
+      const mins = Number(el.dataset.mins) || 5;
+      const modeKey = mins === 20 ? "micro" : mins === 15 ? "p15" : "foco";
+      state.timer.mode = modeKey;
+      state.timer.endsAt = Date.now() + modeMs(modeKey);
+      unlockAudio();
+      if (m.col === 0) m.col = 1;
+      save(); renderAll(); startTick(); showTab("moedor");
+      toast(`Atacando: ${m.title} · ${mins} min no relógio.`, "gold");
       return;
     }
 
@@ -1330,6 +1654,47 @@
       toast("Meta criada no Cofre.", "cyan"); return;
     }
 
+    if (act === "edit-pa") {
+      ui.editPa = id;
+      renderVitrine();
+      const inp = document.querySelector(".pa-edit input");
+      if (inp) { inp.focus(); inp.select(); }
+      return;
+    }
+
+    if (act === "cancel-pa") {
+      ui.editPa = null;
+      renderVitrine();
+      return;
+    }
+
+    if (act === "pay-bill") {
+      const b = state.bills.find((x) => x.id === id);
+      if (!b || b.lastPaid === monthKey()) return;
+      if (!(b.value > 0)) { toast("Conta sem valor. Exclua e cadastre novamente com o valor mensal.", "red"); return; }
+      if (!confirm(`Pagar ${b.name} (${fmt(b.value)}) com o tesouro?`)) return;
+      state.money = round2(state.money - b.value);
+      state.moneyLog.unshift({ id: uid(), amount: -b.value, type: "bill", label: b.name, at: Date.now() });
+      state.moneyLog = state.moneyLog.slice(0, 100);
+      b.lastPaid = monthKey();
+      state.pa += 1;
+      save(); renderAll(); bump($("hudMoney")); bump($("hudPa"));
+      toast(`${b.name} paga. − ${fmt(b.value)} · +1 PA`, "gold");
+      return;
+    }
+
+    if (act === "bill-ics") {
+      const b = state.bills.find((x) => x.id === id);
+      if (!b || !b.dueDate) return;
+      downloadBillIcs(b);
+      return;
+    }
+
+    if (act === "del-bill") {
+      state.bills = state.bills.filter((x) => x.id !== id);
+      save(); renderBills(); return;
+    }
+
     if (act === "buy") {
       const item = findLoot(id);
       if (!item || item.wonAt || state.money < item.money || state.pa < item.pa) return;
@@ -1363,11 +1728,128 @@
   }
   tabs.forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
 
-  function renderAll() { renderHud(); renderTimer(); renderTarget(); renderMissoes(); renderCofre(); renderVitrine(); renderDados(); }
+  function renderAll() { renderHud(); renderTimer(); renderTarget(); renderMissoes(); renderCofre(); renderVitrine(); renderDados(); renderDueBanner(); }
+
+  /* OneSignal Push: chaves salvas localmente, init sob demanda e agendamento do lembrete */
+  const OS_APP_KEY = "qg-onesignal-app-id";
+  const OS_REST_KEY = "qg-onesignal-rest-key";
+  const osAppId = () => localStorage.getItem(OS_APP_KEY) || "";
+  const osRestKey = () => localStorage.getItem(OS_REST_KEY) || "";
+  const osReady = () => !!(osAppId() && osRestKey());
+  const osSubId = () => (window.OneSignal && OneSignal.User && OneSignal.User.PushSubscription) ? OneSignal.User.PushSubscription.id : null;
+  let osInitialized = false;
+
+  async function ensureOsInit() {
+    if (osInitialized || !osReady() || !window.OneSignal) return osInitialized;
+    try {
+      await OneSignal.init({ appId: osAppId(), serviceWorkerPath: "/OneSignalSDKWorker.js" });
+      osInitialized = true;
+    } catch (err) {
+      console.warn("OneSignal auto-init:", err);
+    }
+    return osInitialized;
+  }
+  /* Ao reabrir o PWA, se as chaves já existem, re-inicializa preservando a inscrição/External ID existente */
+  window.addEventListener("DOMContentLoaded", () => { if (osReady()) ensureOsInit(); });
+  if (osReady()) ensureOsInit();
+
+  function renderOsPanel() {
+    const appInp = $("osAppId"), restInp = $("osRestKey"), status = $("osStatus"), btn = $("osEnableBtn");
+    if (!appInp) return;
+    appInp.value = osAppId();
+    restInp.value = osRestKey();
+    const sub = osSubId();
+    if (!osReady()) {
+      status.textContent = "Informe as duas chaves da sua conta OneSignal e ative o push.";
+      status.style.color = "var(--muted)";
+      btn.disabled = false; btn.textContent = "Ativar Push neste Celular";
+    } else if (!sub) {
+      status.textContent = "Chaves salvas. Toque em Ativar Push para assinar neste aparelho.";
+      status.style.color = "var(--muted)";
+      btn.disabled = false; btn.textContent = "Ativar Push neste Celular";
+    } else {
+      status.textContent = `Push ativo neste aparelho. Lembretes serão enviados às 09:00 do vencimento.`;
+      status.style.color = "var(--cyan)";
+      btn.disabled = true; btn.textContent = "Push ativo neste aparelho";
+    }
+  }
+
+  $("osEnableBtn").addEventListener("click", async () => {
+    const appId = $("osAppId").value.trim();
+    const restKey = $("osRestKey").value.trim();
+    if (!appId || !restKey) { toast("Preencha o App ID e a REST API Key.", "red"); return; }
+    localStorage.setItem(OS_APP_KEY, appId);
+    localStorage.setItem(OS_REST_KEY, restKey);
+    try {
+      await ensureOsInit();
+      if (!osInitialized) throw new Error("init failed");
+      const perm = await OneSignal.Notifications.requestPermission();
+      if (!perm) { toast("Permissão de notificação negada.", "red"); }
+      else toast("Push ativado neste aparelho.", "cyan");
+    } catch (err) {
+      console.warn("OneSignal init:", err);
+      toast("Não foi possível ativar o push agora.", "red");
+    }
+    renderOsPanel();
+  });
+  $("osAppId").addEventListener("input", () => { localStorage.setItem(OS_APP_KEY, $("osAppId").value.trim()); renderOsPanel(); });
+  $("osRestKey").addEventListener("input", () => { localStorage.setItem(OS_REST_KEY, $("osRestKey").value.trim()); renderOsPanel(); });
+
+  async function scheduleBillPush(b) {
+    if (!osReady()) {
+      toast("Push não agendado: cadastre as chaves OneSignal na aba Dados.", "gold");
+      return;
+    }
+    if (!osSubId()) {
+      toast("Push não agendado: ative o push neste aparelho na aba Dados.", "gold");
+      return;
+    }
+    const valueTxt = b.value > 0 ? ` - R$ ${b.value.toFixed(2).replace(".", ",")}` : "";
+    const now = new Date();
+    const [y, m, d] = b.dueDate.split("-").map(Number);
+    const sendAfter = `${b.dueDate}T09:00:00-03:00`;
+    const alreadyPast = b.dueDate === todayKey() && now.getHours() >= 9;
+    const body = {
+      app_id: osAppId(),
+      include_subscription_ids: [osSubId()],
+      headings: { pt: "Quartel: Conta vence hoje!", en: "Quartel: Bill due today!" },
+      contents: { pt: `Lembrete de pagamento: ${b.name}${valueTxt}`, en: `Payment reminder: ${b.name}` }
+    };
+    if (!alreadyPast) body.send_after = sendAfter;
+    try {
+      const res = await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Basic ${osRestKey()}` },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast(`Lembrete Push de ${b.name} agendado para o vencimento.`, "cyan");
+    } catch (err) {
+      console.warn("OneSignal schedule:", err);
+      toast("Não foi possível agendar o Push agora.", "red");
+    }
+  }
+  window.addEventListener("DOMContentLoaded", renderOsPanel);
+  renderOsPanel();
 
   if (state.timer.endsAt && Date.now() >= state.timer.endsAt) completeMission(false);
   renderAll();
   if (state.timer.endsAt) startTick();
+  fetchProfile();
+
+  /* Estilos do banner e destaque de vencimento */
+  const style = document.createElement("style");
+  style.textContent = `
+    .due-banner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:0 0 16px;padding:12px 16px;border:1px solid var(--gold,#d4af37);border-radius:12px;background:rgba(212,175,55,.12);color:var(--ink,#f5f0e6)}
+    .due-banner-text{line-height:1.5}
+    .due-banner-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .bill.is-due-today{border-color:var(--gold,#d4af37);box-shadow:0 0 0 1px var(--gold,#d4af37)}
+    .bill.is-overdue{border-color:var(--red,#e5484d);box-shadow:0 0 0 1px var(--red,#e5484d)}
+    .due-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;font-size:.75rem;font-weight:600}
+    .due-tag.today{background:rgba(212,175,55,.25);color:var(--gold,#ffd700)}
+    .due-tag.overdue{background:rgba(229,72,77,.2);color:var(--red,#ff6b70)}
+  `;
+  document.head.appendChild(style);
 })();
 </script>
 </body>
