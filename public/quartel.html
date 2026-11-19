@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="Quartel" />
 <link rel="manifest" href='data:application/manifest+json,{"name":"Quartel General","short_name":"Quartel","display":"standalone","background_color":"%230a0e13","theme_color":"%230a0e13","start_url":"."}' />
 <title>Quartel General — Comando Pessoal</title>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>
   :root {
     --bg: #0a0e13;
@@ -339,7 +338,6 @@
         </div>
         <div class="actions">
           <button class="btn btn-gold btn-xl" id="startBtn" type="button">Iniciar Missão</button>
-          <button class="btn btn-gold btn-xl" id="completeBtn" type="button" onclick="completeMission()" >Concluir Agora</button>
           <button class="btn btn-danger" id="abortBtn" type="button" hidden>Abortar missão</button>
         </div>
         <p class="hint" id="timerHint">Sem limite diário. Use quantas vezes quiser.</p>
@@ -553,21 +551,6 @@
       </div>
 
       <div class="card">
-        <h2 class="section-title">Notificações Push</h2>
-        <p class="hint" style="margin:0 0 12px">Receba o aviso das contas a pagar mesmo com o navegador fechado. Cole as chaves da sua conta OneSignal e ative neste aparelho.</p>
-        <div class="field">
-          <label for="osAppId">OneSignal App ID</label>
-          <input id="osAppId" maxlength="64" placeholder="Ex: 8d4a1b2c-..." autocomplete="off" />
-        </div>
-        <div class="field">
-          <label for="osRestKey">OneSignal REST API Key</label>
-          <input id="osRestKey" maxlength="128" placeholder="Chave REST da conta" autocomplete="off" />
-        </div>
-        <button type="button" class="btn btn-cyan" id="osEnableBtn">Ativar Push neste Celular</button>
-        <p class="hint" id="osStatus" style="margin:8px 0 0"></p>
-      </div>
-
-      <div class="card">
         <h2 class="section-title">Exportar backup</h2>
         <p class="hint" style="margin:0 0 12px">Todos os dados ficam salvos neste navegador. Faça backups periódicos.</p>
         <div class="row">
@@ -682,55 +665,7 @@
     return s;
   }
   let state = load();
-  let isInitialLoadDone = false;
-  const SUPA_URL = document.querySelector('meta[name="supabase-url"]')?.content || "";
-const SUPA_KEY = document.querySelector('meta[name="supabase-anon-key"]')?.content || "";
-  
-  let syncTimer = null;
-const save = () => {
-  if (!isInitialLoadDone) return;
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-  if (!SUPA_URL || !SUPA_KEY) return;
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => {
-    fetch(`${SUPA_URL}/rest/v1/app_state?id=eq.1`, {
-      method: "PATCH",
-      headers: {
-        apikey: SUPA_KEY,
-        Authorization: `Bearer ${SUPA_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal"
-      },
-      body: JSON.stringify({ state_data: state })
-    }).catch(() => {});
-  }, 800);
-};
-  
-
-  /* Fetch inicial do perfil no Supabase: bloqueia qualquer salvamento até terminar.
-     Se vier vazio/erro e já há dados locais, preserva os locais. */
-  
-  async function fetchProfile() {
-    if (!SUPA_URL || !SUPA_KEY) { isInitialLoadDone = true; return; }
-    try {
-      const res = await fetch(`${SUPA_URL}/rest/v1/app_state?id=eq.1&select=state_data`, {
-        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const rows = await res.json();
-      const remote = rows && rows.length && rows[0].state_data;
-      if (remote && typeof remote === "object" && Object.keys(remote).length) {
-        state = hydrate(remote);
-        if (!state.knightSeeded) addKnightProtocol(state);
-        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-      }
-    } catch (err) {
-      console.warn("fetchProfile falhou, mantendo dados locais:", err);
-    } finally {
-      isInitialLoadDone = true;
-      renderAll();
-    }
-  }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
   const ui = { col: 0, zone: "all", open: new Set(), editPa: null };
 
@@ -1404,7 +1339,6 @@ const save = () => {
     $("billDetails").open = false;
     renderBills();
     toast("Conta adicionada em A pagar.", "cyan");
-    if (state.bills[state.bills.length - 1].dueDate) scheduleBillPush(state.bills[state.bills.length - 1]);
   });
 
   function moveMoney(sign) {
@@ -1749,112 +1683,9 @@ const save = () => {
 
   function renderAll() { renderHud(); renderTimer(); renderTarget(); renderMissoes(); renderCofre(); renderVitrine(); renderDados(); renderDueBanner(); }
 
-  /* OneSignal Push: chaves salvas localmente, init sob demanda e agendamento do lembrete */
-  const OS_APP_KEY = "qg-onesignal-app-id";
-  const OS_REST_KEY = "qg-onesignal-rest-key";
-  const osAppId = () => localStorage.getItem(OS_APP_KEY) || "";
-  const osRestKey = () => localStorage.getItem(OS_REST_KEY) || "";
-  const osReady = () => !!(osAppId() && osRestKey());
-  const osSubId = () => (window.OneSignal && OneSignal.User && OneSignal.User.PushSubscription) ? OneSignal.User.PushSubscription.id : null;
-  let osInitialized = false;
-
-  async function ensureOsInit() {
-    if (osInitialized || !osReady() || !window.OneSignal) return osInitialized;
-    try {
-      await OneSignal.init({ appId: osAppId(), serviceWorkerPath: "/OneSignalSDKWorker.js" });
-      osInitialized = true;
-    } catch (err) {
-      console.warn("OneSignal auto-init:", err);
-    }
-    return osInitialized;
-  }
-  /* Ao reabrir o PWA, se as chaves já existem, re-inicializa preservando a inscrição/External ID existente */
-  window.addEventListener("DOMContentLoaded", () => { if (osReady()) ensureOsInit(); });
-  if (osReady()) ensureOsInit();
-
-  function renderOsPanel() {
-    const appInp = $("osAppId"), restInp = $("osRestKey"), status = $("osStatus"), btn = $("osEnableBtn");
-    if (!appInp) return;
-    appInp.value = osAppId();
-    restInp.value = osRestKey();
-    const sub = osSubId();
-    if (!osReady()) {
-      status.textContent = "Informe as duas chaves da sua conta OneSignal e ative o push.";
-      status.style.color = "var(--muted)";
-      btn.disabled = false; btn.textContent = "Ativar Push neste Celular";
-    } else if (!sub) {
-      status.textContent = "Chaves salvas. Toque em Ativar Push para assinar neste aparelho.";
-      status.style.color = "var(--muted)";
-      btn.disabled = false; btn.textContent = "Ativar Push neste Celular";
-    } else {
-      status.textContent = `Push ativo neste aparelho. Lembretes serão enviados às 09:00 do vencimento.`;
-      status.style.color = "var(--cyan)";
-      btn.disabled = true; btn.textContent = "Push ativo neste aparelho";
-    }
-  }
-
-  $("osEnableBtn").addEventListener("click", async () => {
-    const appId = $("osAppId").value.trim();
-    const restKey = $("osRestKey").value.trim();
-    if (!appId || !restKey) { toast("Preencha o App ID e a REST API Key.", "red"); return; }
-    localStorage.setItem(OS_APP_KEY, appId);
-    localStorage.setItem(OS_REST_KEY, restKey);
-    try {
-      await ensureOsInit();
-      if (!osInitialized) throw new Error("init failed");
-      const perm = await OneSignal.Notifications.requestPermission();
-      if (!perm) { toast("Permissão de notificação negada.", "red"); }
-      else toast("Push ativado neste aparelho.", "cyan");
-    } catch (err) {
-      console.warn("OneSignal init:", err);
-      toast("Não foi possível ativar o push agora.", "red");
-    }
-    renderOsPanel();
-  });
-  $("osAppId").addEventListener("input", () => { localStorage.setItem(OS_APP_KEY, $("osAppId").value.trim()); renderOsPanel(); });
-  $("osRestKey").addEventListener("input", () => { localStorage.setItem(OS_REST_KEY, $("osRestKey").value.trim()); renderOsPanel(); });
-
-  async function scheduleBillPush(b) {
-    if (!osReady()) {
-      toast("Push não agendado: cadastre as chaves OneSignal na aba Dados.", "gold");
-      return;
-    }
-    if (!osSubId()) {
-      toast("Push não agendado: ative o push neste aparelho na aba Dados.", "gold");
-      return;
-    }
-    const valueTxt = b.value > 0 ? ` - R$ ${b.value.toFixed(2).replace(".", ",")}` : "";
-    const now = new Date();
-    const [y, m, d] = b.dueDate.split("-").map(Number);
-    const sendAfter = `${b.dueDate}T09:00:00-03:00`;
-    const alreadyPast = b.dueDate === todayKey() && now.getHours() >= 9;
-    const body = {
-      app_id: osAppId(),
-      include_subscription_ids: [osSubId()],
-      headings: { pt: "Quartel: Conta vence hoje!", en: "Quartel: Bill due today!" },
-      contents: { pt: `Lembrete de pagamento: ${b.name}${valueTxt}`, en: `Payment reminder: ${b.name}` }
-    };
-    if (!alreadyPast) body.send_after = sendAfter;
-    try {
-      const res = await fetch("https://onesignal.com/api/v1/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Basic ${osRestKey()}` },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      toast(`Lembrete Push de ${b.name} agendado para o vencimento.`, "cyan");
-    } catch (err) {
-      console.warn("OneSignal schedule:", err);
-      toast("Não foi possível agendar o Push agora.", "red");
-    }
-  }
-  window.addEventListener("DOMContentLoaded", renderOsPanel);
-  renderOsPanel();
-
   if (state.timer.endsAt && Date.now() >= state.timer.endsAt) completeMission(false);
   renderAll();
   if (state.timer.endsAt) startTick();
-  fetchProfile();
 
   /* Estilos do banner e destaque de vencimento */
   const style = document.createElement("style");
