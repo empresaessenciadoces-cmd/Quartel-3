@@ -683,15 +683,33 @@
   }
   let state = load();
   let isInitialLoadDone = false;
-  const save = () => {
-    if (!isInitialLoadDone) return;
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-  };
+  const SUPA_URL = document.querySelector('meta[name="supabase-url"]')?.content || "";
+const SUPA_KEY = document.querySelector('meta[name="supabase-anon-key"]')?.content || "";
+  
+  let syncTimer = null;
+const save = () => {
+  if (!isInitialLoadDone) return;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+  if (!SUPA_URL || !SUPA_KEY) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    fetch(`${SUPA_URL}/rest/v1/app_state?id=eq.1`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${SUPA_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({ state_data: state })
+    }).catch(() => {});
+  }, 800);
+};
+  
 
   /* Fetch inicial do perfil no Supabase: bloqueia qualquer salvamento até terminar.
      Se vier vazio/erro e já há dados locais, preserva os locais. */
-  const SUPA_URL = document.querySelector('meta[name="supabase-url"]')?.content || "";
-  const SUPA_KEY = document.querySelector('meta[name="supabase-anon-key"]')?.content || "";
+  
   async function fetchProfile() {
     if (!SUPA_URL || !SUPA_KEY) { isInitialLoadDone = true; return; }
     try {
