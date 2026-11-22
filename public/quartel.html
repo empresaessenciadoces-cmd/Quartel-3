@@ -210,24 +210,28 @@
   .goal-actions .icon-btn { min-height: 44px; min-width: 44px; }
   .goal.done-goal { opacity: 0.75; }
 
-  /* Sorteio */
-  .draw-card { border-style: dashed; border-color: rgba(52,212,177,0.4); }
-  .draw-row { display: flex; gap: 8px; }
-  .draw-row .btn { flex: 1; }
-  .draw-pick { background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--cyan); border-radius: 12px; padding: 12px; margin-top: 12px; }
-  .draw-pick.rolling { border-left-color: var(--gold); }
-  .draw-pick .m-title { margin: 6px 0 10px; }
-  .draw-roll { font-family: var(--mono); font-size: 14px; color: var(--gold); text-align: center; padding: 8px 0; animation: pulse 0.4s ease infinite alternate; }
+  /* Sorteio (aba dedicada) */
+  .draw-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 48px 16px; min-height: 60vh; gap: 20px; }
+  .draw-big { min-height: 84px; font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; max-width: 320px; box-shadow: 0 10px 40px -10px rgba(242,181,58,0.7); }
+  .draw-result { background: var(--panel); border: 1px solid rgba(52,212,177,0.45); border-radius: var(--radius); padding: 20px 16px; width: 100%; max-width: 360px; }
+  .draw-result.rolling { border-color: rgba(242,181,58,0.5); }
+  .draw-roll { font-family: var(--mono); font-size: 16px; color: var(--gold); padding: 14px 0; animation: pulse 0.35s ease infinite alternate; }
   @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
 
+  /* Modal de lembrete do Cofre */
+  .modal-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4,7,11,0.82); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-alert { background: var(--panel); border: 2px solid var(--red); border-radius: var(--radius); padding: 20px 16px; width: 100%; max-width: 380px; animation: alertPulse 1s ease infinite; }
+  @keyframes alertPulse { 0%, 100% { border-color: var(--red); box-shadow: 0 0 0 0 rgba(239,91,91,0.5); } 50% { border-color: #ffb020; box-shadow: 0 0 32px 4px rgba(239,91,91,0.35); } }
+  .modal-alert h2 { margin: 0 0 6px; font-size: 20px; color: var(--red); }
+  .modal-alert .when { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
   /* Missões */
-  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
   .seg button { appearance: none; border: 0; background: transparent; color: var(--muted); border-radius: 9px; min-height: 48px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1.15; }
   .seg button b { font-size: 16px; color: var(--text); }
   .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); }
   .seg button[aria-pressed="true"][data-col="0"] { box-shadow: inset 0 -2px 0 var(--muted); }
-  .seg button[aria-pressed="true"][data-col="1"] { box-shadow: inset 0 -2px 0 var(--gold); }
-  .seg button[aria-pressed="true"][data-col="2"] { box-shadow: inset 0 -2px 0 var(--cyan); }
+  .seg button[aria-pressed="true"][data-col="1"] { box-shadow: inset 0 -2px 0 var(--cyan); }
   .zone-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
   .zone-chips::-webkit-scrollbar { display: none; }
   .zchip { flex: none; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -273,7 +277,11 @@
 
   /* Nav */
   nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: rgba(10,14,19,0.94); backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
-  .tabs-inner { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+  .tabs-inner { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); }
+  .loot-prio { display: grid; grid-template-columns: 44px 1fr 44px; gap: 6px; margin-top: 10px; align-items: center; }
+  .loot-prio .icon-btn { min-height: 44px; min-width: 44px; }
+  .prio-top { border-color: rgba(242,181,58,0.6); box-shadow: 0 0 0 1px rgba(242,181,58,0.2), 0 10px 30px -18px rgba(242,181,58,0.7); }
+  .prio-badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(242,181,58,0.5); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
   .tab { appearance: none; background: none; border: 0; color: var(--muted); font: inherit; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; position: relative; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 0 2px; }
   .tab svg { width: 22px; height: 22px; }
   .tab[aria-selected="true"] { color: var(--text); }
@@ -365,7 +373,10 @@
     <section class="panel" id="panel-missoes" role="tabpanel" aria-labelledby="tab-missoes">
       <div class="panel-head">
         <div class="eyebrow">Setor 02 · Quadro de Operações</div>
-        <h1>Missões</h1>
+        <div class="section-row">
+          <h1 style="margin-bottom:0">Missões</h1>
+          <button class="btn btn-ghost btn-sm" type="button" id="testAlarmBtn">🔊 Testar Alarme</button>
+        </div>
         <p class="sub">Quebre cada missão em micropassos de 5 minutos e mova pelo quadro.</p>
       </div>
 
@@ -389,21 +400,9 @@
         </form>
       </details>
 
-      <div class="card draw-card">
-        <div class="section-row">
-          <h2 class="section-title">Missão Sorteada</h2>
-          <span class="tag-mono" id="drawDate"></span>
-        </div>
-        <div class="draw-row">
-          <button class="btn btn-cyan" type="button" data-act="draw" id="drawBtn">Sortear Missão</button>
-        </div>
-        <div id="drawPick"></div>
-      </div>
-
       <div class="seg" role="group" aria-label="Colunas do quadro" id="seg">
         <button type="button" data-col="0" aria-pressed="true"><b id="cnt0">0</b>A Fazer</button>
-        <button type="button" data-col="1" aria-pressed="false"><b id="cnt1">0</b>Em Andamento</button>
-        <button type="button" data-col="2" aria-pressed="false"><b id="cnt2">0</b>Concluído</button>
+        <button type="button" data-col="1" aria-pressed="false"><b id="cnt1">0</b>Concluída</button>
       </div>
 
       <div class="zone-chips" id="zoneChips" role="group" aria-label="Filtrar por zona"></div>
@@ -475,6 +474,10 @@
             <div class="field">
               <label for="billDate">Data de vencimento / pagamento <span style="text-transform:none;letter-spacing:0">(opcional)</span></label>
               <input id="billDate" type="date" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="billRemind">Lembrete — data e hora <span style="text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <input id="billRemind" type="datetime-local" autocomplete="off" />
             </div>
             <button type="submit" class="btn btn-green">Cadastrar conta</button>
           </form>
@@ -557,6 +560,19 @@
       <div id="wonList"></div>
     </section>
 
+    <!-- SORTEIO -->
+    <section class="panel" id="panel-sorteio" role="tabpanel" aria-labelledby="tab-sorteio">
+      <div class="panel-head">
+        <div class="eyebrow">Setor 06 · Roleta do Dever</div>
+        <h1>Sorteio</h1>
+        <p class="sub">Deixe o dado decidir qual missão atacar agora.</p>
+      </div>
+      <div class="draw-stage">
+        <div id="drawResult" style="width:100%;max-width:360px"></div>
+        <button class="btn btn-gold btn-xl draw-big" type="button" id="drawBigBtn">🎲 Sortear Missão</button>
+      </div>
+    </section>
+
     <!-- DADOS -->
     <section class="panel" id="panel-dados" role="tabpanel" aria-labelledby="tab-dados">
       <div class="panel-head">
@@ -613,6 +629,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg>
       Vitrine<span class="dot" id="dotVitrine"></span>
     </button>
+    <button class="tab" role="tab" id="tab-sorteio" aria-controls="panel-sorteio" aria-selected="false" data-tab="sorteio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+      Sorteio
+    </button>
     <button class="tab" role="tab" id="tab-dados" aria-controls="panel-dados" aria-selected="false" data-tab="dados">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="2.5"/><path d="M4 5.5v6c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-6M4 11.5v6c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-6"/></svg>
       Dados
@@ -621,6 +641,18 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="assertive"></div>
+
+<div class="modal-backdrop" id="remindModal" hidden>
+  <div class="modal-alert" role="alertdialog" aria-modal="true" aria-labelledby="remindTitle">
+    <h2 id="remindTitle">Lembrete do Cofre</h2>
+    <div class="when" id="remindWhen"></div>
+    <p id="remindText" style="margin:0 0 16px;font-size:15px"></p>
+    <div class="actions">
+      <button class="btn btn-green" type="button" id="remindAck">Confirmar que Vi o Aviso</button>
+      <button class="btn btn-ghost" type="button" id="remindSnooze">Adiar 30 min</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -633,7 +665,7 @@
   };
   const modeMs = (m) => (MODES[m] || MODES.foco).mins * 60 * 1000;
   const CIRC = 2 * Math.PI * 48;
-  const COLS = ["A Fazer", "Em Andamento", "Concluído"];
+  const COLS = ["A Fazer", "Concluída"];
   const DEFAULT_ZONES = ["Cozinha", "Sala", "Quarto", "Banheiro", "Lavanderia", "Escritório", "Garagem"];
 
   const defaults = {
@@ -685,6 +717,14 @@
     try { s = hydrate(JSON.parse(localStorage.getItem(KEY))); }
     catch { s = freshState(); }
     if (!s.knightSeeded) addKnightProtocol(s);
+    return s;
+  }
+  /* Migração: "Em Andamento" (col 1 antigo) volta para "A Fazer"; "Concluído" vira col 1 */
+  function migrate(s) {
+    (s.missions || []).forEach((m) => {
+      if (m.col === 1 && !m.doneAt) m.col = 0;
+      if (m.col === 2) m.col = 1;
+    });
     return s;
   }
   let state = load();
@@ -779,22 +819,34 @@
       if (audioCtx.state === "suspended") audioCtx.resume();
     } catch {}
   }
+  /* Fanfarra ascendente de 5 notas × 2 voltas: triangle + sawtooth, compressor e ganho máximo */
   function alarm() {
     unlockAudio();
-    if (!audioCtx) return;
-    [880, 1175, 1568, 880, 1175, 1568].forEach((f, i) => {
-      const t = audioCtx.currentTime + i * 0.18;
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = "square";
-      o.frequency.setValueAtTime(f, t);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-      o.connect(g).connect(audioCtx.destination);
-      o.start(t); o.stop(t + 0.17);
-    });
-    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+    if (!audioCtx) { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 500]); return; }
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -18; comp.knee.value = 20; comp.ratio.value = 8; comp.attack.value = 0.003; comp.release.value = 0.2;
+    const master = audioCtx.createGain();
+    master.gain.value = 1.0;
+    comp.connect(master).connect(audioCtx.destination);
+    const NOTES = [523.25, 659.25, 783.99, 987.77, 1174.66];
+    for (let round = 0; round < 2; round++) {
+      NOTES.forEach((f, i) => {
+        const t0 = audioCtx.currentTime + round * 1.6 + i * 0.16;
+        [["triangle", 0.5], ["sawtooth", 0.25]].forEach(([type, amp]) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(f, t0);
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(amp, t0 + 0.02);
+          g.gain.setValueAtTime(amp, t0 + 0.11);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+          o.connect(g).connect(comp);
+          o.start(t0); o.stop(t0 + 0.16);
+        });
+      });
+    }
+    if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 500]);
   }
   function blip() {
     if (!audioCtx) return;
@@ -840,7 +892,7 @@
       mirrorSession(entry);
       if (m) {
         m.focus = (m.focus || 0) + 1;
-        if (m.col === 0) m.col = 1;
+        moveMissionTo(m, 1);
       }
       msg = m ? `Missão cumprida em "${m.title}"! +${mode.pa} PA` : mode.pa > 1 ? `${mode.label} cumprida! +${mode.pa} PA adicionados ao inventário` : "Missão cumprida! +1 PA adicionado ao inventário";
     }
@@ -1013,7 +1065,6 @@
     unlockAudio();
     state.timer.endsAt = Date.now() + modeMs(state.timer.mode);
     const m = state.timer.targetId && state.timer.mode !== "descanso" && findMission(state.timer.targetId);
-    if (m && m.col === 0) m.col = 1;
     save();
     renderTimer(); renderTarget(); renderMissoes(); startTick();
     toast(m ? `Atacando: ${m.title}` : `${MODES[state.timer.mode].label} iniciada. ${MODES[state.timer.mode].mins} minutos no relógio.`, "gold");
@@ -1033,27 +1084,35 @@
   window.addEventListener("focus", resyncTimer);
 
   /* MISSÕES */
-  function missionCard(m) {
-    const total = m.subs.length, doneN = m.subs.filter((s) => s.done).length;
-    const pct = total ? (doneN / total) * 100 : m.col === 2 ? 100 : 0;
+  function missionCard(m, idx, total) {
+    const totalSubs = m.subs.length, doneN = m.subs.filter((s) => s.done).length;
+    const pct = totalSubs ? (doneN / totalSubs) * 100 : m.col === 1 ? 100 : 0;
     const isTarget = state.timer.targetId === m.id;
+    const running = isTarget && !!state.timer.endsAt;
     const open = ui.open.has(m.id);
     const busy = !!state.timer.endsAt;
-    const middle = m.col === 2
+    const middle = m.col === 1
       ? `<div class="won-date">Concluída ${m.doneAt ? new Date(m.doneAt).toLocaleDateString("pt-BR") : ""}</div>`
       : `<div class="grind-row">
-          <button class="btn ${isTarget ? "btn-ghost" : "btn-gold"}" data-act="grind" data-id="${m.id}" data-mins="5" ${busy ? "disabled" : ""}>5 min</button>
-          <button class="btn btn-ghost" data-act="grind" data-id="${m.id}" data-mins="15" ${busy ? "disabled" : ""}>15 min</button>
-          <button class="btn btn-ghost" data-act="grind" data-id="${m.id}" data-mins="20" ${busy ? "disabled" : ""}>20 min</button>
+          <button class="btn ${isTarget ? "btn-ghost" : "btn-gold"}" data-act="grind" data-id="${m.id}" data-mins="5" ${busy && !isTarget ? "disabled" : ""}>5 min</button>
+          <button class="btn btn-ghost" data-act="grind" data-id="${m.id}" data-mins="15" ${busy && !isTarget ? "disabled" : ""}>15 min</button>
+          <button class="btn btn-ghost" data-act="grind" data-id="${m.id}" data-mins="20" ${busy && !isTarget ? "disabled" : ""}>20 min</button>
         </div>`;
-    return `<article class="mission c${m.col} ${isTarget && m.col !== 2 ? "targeted" : ""}">
-      <div class="m-tags"><span class="zone">${esc(m.zone || "Geral")}</span>${isTarget && m.col !== 2 ? '<span class="badge ready">Alvo do Moedor</span>' : ""}</div>
+    const runningBadge = running ? '<span class="badge ready">⏱ Timer ativo</span>' : "";
+    const finishBtn = running ? `<button class="btn btn-green btn-sm" data-act="finish-now" data-id="${m.id}">Concluir Agora</button>` : "";
+    const sortBtns = m.col === 0 && total > 1
+      ? `<button class="icon-btn" data-act="sort-mission" data-id="${m.id}" data-dir="-1" ${idx === 0 ? "disabled" : ""} aria-label="Mover ${esc(m.title)} para cima">↑</button>
+         <button class="icon-btn" data-act="sort-mission" data-id="${m.id}" data-dir="1" ${idx === total - 1 ? "disabled" : ""} aria-label="Mover ${esc(m.title)} para baixo">↓</button>`
+      : "";
+    return `<article class="mission c${m.col} ${isTarget && m.col !== 1 ? "targeted" : ""}">
+      <div class="m-tags"><span class="zone">${esc(m.zone || "Geral")}</span>${runningBadge}${isTarget && m.col !== 1 ? '<span class="badge ready">Alvo do Moedor</span>' : ""}</div>
       <h3 class="m-title">${esc(m.title)}</h3>
-      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${m.focus || 0} × sessões</span></div>
+      <div class="m-meta"><span>${doneN}/${totalSubs} micropassos</span><span class="focus">${m.focus || 0} × sessões</span></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
+      ${finishBtn}
       <details class="m-details" data-card="${m.id}" ${open ? "open" : ""}>
-        <summary>Checklist · ${doneN}/${total}</summary>
-        ${total ? `<ul class="checklist">${m.subs.map((s) => `<li>
+        <summary>Checklist · ${doneN}/${totalSubs}</summary>
+        ${totalSubs ? `<ul class="checklist">${m.subs.map((s) => `<li>
           <label class="check ${s.done ? "is-done" : ""}"><input type="checkbox" data-sub="${m.id}" data-sid="${s.id}" ${s.done ? "checked" : ""} /><button type="button" class="sub-pick ${state.timer.activeSubId === s.id ? "is-active" : ""}" data-act="set-sub" data-id="${m.id}" data-sid="${s.id}" aria-label="Definir como alvo do Moedor">${state.timer.activeSubId === s.id ? "◈ " : ""}${esc(s.text)}</button></label>
           <button class="mini-x" type="button" data-act="del-sub" data-id="${m.id}" data-sid="${s.id}" aria-label="Remover micropasso ${esc(s.text)}">×</button>
         </li>`).join("")}</ul>` : `<p class="hint" style="margin:0 0 8px">Nenhum micropasso ainda.</p>`}
@@ -1063,9 +1122,11 @@
         </form>
       </details>
       <div class="m-actions">
-        <button class="icon-btn" data-act="move" data-id="${m.id}" data-dir="-1" ${m.col === 0 ? "disabled" : ""} aria-label="${m.col > 0 ? `Mover para ${COLS[m.col - 1]}` : "Já está na primeira coluna"}">‹</button>
+        ${sortBtns ? `<div style="display:grid;gap:8px">${sortBtns}</div>` : ""}
         ${middle}
-        <button class="icon-btn" data-act="move" data-id="${m.id}" data-dir="1" ${m.col === 2 ? "disabled" : ""} aria-label="${m.col < 2 ? `Mover para ${COLS[m.col + 1]}` : "Já está concluída"}">›</button>
+        ${m.col === 0
+          ? `<button class="icon-btn" data-act="move" data-id="${m.id}" data-dir="1" aria-label="Marcar ${esc(m.title)} como concluída">›</button>`
+          : `<button class="icon-btn" data-act="move" data-id="${m.id}" data-dir="-1" aria-label="Voltar ${esc(m.title)} para A Fazer">‹</button>`}
         <button class="icon-btn" data-act="del-mission" data-id="${m.id}" aria-label="Excluir missão ${esc(m.title)}">${trashIcon}</button>
       </div>
     </article>`;
@@ -1076,7 +1137,7 @@
     if (ui.zone !== "all" && !zones.includes(ui.zone)) ui.zone = "all";
     const inZone = (m) => ui.zone === "all" || (m.zone || "Geral") === ui.zone;
 
-    [0, 1, 2].forEach((c) => { $(`cnt${c}`).textContent = state.missions.filter((m) => m.col === c && inZone(m)).length; });
+    [0, 1].forEach((c) => { $(`cnt${c}`).textContent = state.missions.filter((m) => m.col === c && inZone(m)).length; });
     document.querySelectorAll("#seg button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.col) === ui.col)));
 
     $("zoneChips").innerHTML = zones.length
@@ -1086,64 +1147,57 @@
 
     $("zoneList").innerHTML = [...new Set([...DEFAULT_ZONES, ...zones])].map((z) => `<option value="${esc(z)}"></option>`).join("");
 
-    const list = state.missions.filter((m) => m.col === ui.col && inZone(m))
-      .sort((a, b) => ui.col === 2 ? (b.doneAt || 0) - (a.doneAt || 0) : a.createdAt - b.createdAt);
-
-    renderDraw();
+    const list = state.missions.filter((m) => m.col === ui.col && inZone(m));
+    const sorted = ui.col === 1
+      ? [...list].sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0))
+      : [...list].sort((a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
 
     if (!state.missions.length) {
       $("missionList").innerHTML = `<div class="card"><p class="empty">Quadro vazio. Lance sua primeira missão ou carregue um plano de exemplo com zonas da casa.</p><button class="btn btn-ghost" data-act="seed">Carregar plano de exemplo</button></div>`;
-    } else if (!list.length) {
-      const msg = ["Nenhuma missão a fazer aqui.", "Nada em andamento. Escolha uma missão e moa 5 minutos.", "Nenhuma missão concluída ainda."][ui.col];
+    } else if (!sorted.length) {
+      const msg = ["Nenhuma missão a fazer aqui.", "Nenhuma missão concluída ainda."][ui.col];
       $("missionList").innerHTML = `<div class="card"><p class="empty">${msg}</p></div>`;
     } else {
-      $("missionList").innerHTML = list.map(missionCard).join("");
+      $("missionList").innerHTML = sorted.map((m, i) => missionCard(m, i, sorted.length)).join("");
     }
-    $("dotMissoes").classList.toggle("show", state.missions.some((m) => m.col === 1));
+    $("dotMissoes").classList.toggle("show", state.missions.some((m) => m.col === 0 && state.timer.targetId === m.id && state.timer.endsAt));
   }
 
-  /* Sorteio da missão do dia */
+  /* Sorteio: aba dedicada, roleta de 1s sobre as missões "A Fazer" do dia */
   let rolling = false;
   function renderDraw() {
-    $("drawDate").textContent = state.draw && state.draw.date === todayKey() ? "Sorteio de hoje" : "";
+    const box = $("drawResult");
     const m = state.draw && state.draw.date === todayKey() && state.draw.missionId && findMission(state.draw.missionId);
-    const box = $("drawPick");
-    if (!m) {
-      box.innerHTML = `<p class="hint" style="margin:12px 0 0">Toque em "Sortear Missão" para Sortear aleatoriamente uma missão pendente do quadro.</p>`;
+    if (!m || m.col !== 0) {
+      box.innerHTML = `<p class="hint" style="text-align:center">Nenhuma missão sorteada ainda. Toque no botão para deixar a sorte decidir entre as missões "A Fazer" de hoje.</p>`;
       return;
     }
-    const total = m.subs.length, doneN = m.subs.filter((s) => s.done).length;
-    const pct = total ? (doneN / total) * 100 : 0;
-    box.innerHTML = `<div class="draw-pick">
+    const mode = MODES.foco;
+    box.innerHTML = `<div class="draw-result">
       <div class="m-tags"><span class="zone">${esc(m.zone || "Geral")}</span><span class="badge cyan">Sorteada</span></div>
-      <h3 class="m-title">${esc(m.title)}</h3>
-      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${m.focus || 0} × sessões</span></div>
-      <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="draw-row" style="margin-top:10px">
-        <button class="btn btn-gold" type="button" data-act="draw-start" data-id="${m.id}">Iniciar Timer</button>
+      <h3 class="m-title" style="font-size:20px">${esc(m.title)}</h3>
+      <div class="costs">
+        <div class="cost"><div class="k">Duração</div><div class="v">${mode.mins} min</div></div>
+        <div class="cost"><div class="k">Recompensa</div><div class="v">+${mode.pa} PA</div></div>
+      </div>
+      <div class="draw-row" style="display:flex;gap:8px">
+        <button class="btn btn-gold" type="button" data-act="draw-start" data-id="${m.id}">Iniciar Agora</button>
         <button class="btn btn-ghost" type="button" data-act="draw" ${rolling ? "disabled" : ""}>Sortear Outra</button>
       </div>
     </div>`;
   }
 
-  function drawCardHtml(m, animated) {
-    return `<div class="draw-pick ${animated ? "rolling" : ""}"><div class="draw-roll">${esc(m.title)}</div></div>`;
-  }
-
-  function pendingMissions(excludeId) {
-    const pend = state.missions.filter((m) => m.col !== 2 && m.id !== excludeId);
-    return pend.length ? pend : state.missions.filter((m) => m.col !== 2);
-  }
-
   function runDraw(excludeId) {
     if (rolling) return;
-    const pool = pendingMissions(excludeId);
-    if (!pool.length) { toast("Nenhuma missão pendente para sortear.", "red"); return; }
+    const pool = state.missions.filter((m) => m.col === 0 && m.id !== excludeId);
+    if (!pool.length) { toast("Nenhuma missão em \"A Fazer\" para sortear.", "red"); return; }
     rolling = true;
     unlockAudio();
+    showTab("sorteio");
     const pick = () => pool[Math.floor(Math.random() * pool.length)];
-    const box = $("drawPick");
-    const iv = setInterval(() => { box.innerHTML = drawCardHtml(pick(), true); blip(); }, 130);
+    const box = $("drawResult");
+    box.innerHTML = `<div class="draw-result rolling"><div class="draw-roll">${esc(pick().title)}</div></div>`;
+    const iv = setInterval(() => { box.querySelector(".draw-roll").textContent = pick().title; blip(); }, 140);
     setTimeout(() => {
       clearInterval(iv);
       rolling = false;
@@ -1151,8 +1205,9 @@
       state.draw = { date: todayKey(), missionId: chosen.id };
       markSaved(); save();
       renderDraw();
+      blip();
       toast(`Missão sorteada: ${chosen.title}`, "cyan");
-    }, 800);
+    }, 1000);
   }
 
   function startDrawnMission(id) {
@@ -1162,7 +1217,6 @@
     state.timer.mode = "foco";
     state.timer.endsAt = Date.now() + modeMs("foco");
     unlockAudio();
-    if (m.col === 0) m.col = 1;
     markSaved(); save(); renderAll(); startTick(); showTab("moedor");
     toast(`Atacando: ${m.title} · 5 min no relógio.`, "gold");
   }
@@ -1206,9 +1260,8 @@
     if (!s) return;
     s.done = cb.checked;
     if (s.done) { unlockAudio(); blip(); }
-    if (s.done && m.col === 0) m.col = 1;
     save(); renderMissoes(); renderTarget(); renderDados();
-    if (s.done && m.subs.every((x) => x.done) && m.col !== 2) toast("Todos os micropassos concluídos. Mova para Concluído ›", "cyan");
+    if (s.done && m.subs.every((x) => x.done) && m.col !== 1) toast("Todos os micropassos concluídos. Marque a missão como concluída ›", "cyan");
   });
 
   document.addEventListener("submit", (e) => {
@@ -1239,9 +1292,9 @@
   });
 
   function moveMissionTo(m, col) {
-    m.col = Math.max(0, Math.min(2, col));
-    m.doneAt = m.col === 2 ? Date.now() : null;
-    if (m.col === 2 && state.timer.targetId === m.id && !state.timer.endsAt) state.timer.targetId = null;
+    m.col = Math.max(0, Math.min(1, col));
+    m.doneAt = m.col === 1 ? Date.now() : null;
+    if (m.col === 1 && state.timer.targetId === m.id && !state.timer.endsAt) state.timer.targetId = null;
   }
 
   function seed() {
@@ -1570,8 +1623,8 @@
       ? `<p class="goal-link">Meta #${gi + 1} no Cofre · ${goalRows[gi].pct}% abastecida (${fmt(goalRows[gi].alloc)})</p>`
       : `<button class="link-btn" data-act="loot-goal" data-id="${item.id}">+ Criar meta no Cofre</button>`;
 
-    return `<article class="loot ${ready ? "ready" : ""}">
-      <div class="loot-head"><h3 class="loot-name">${esc(item.name)}</h3><span class="badge ${ready ? "ready" : "locked"}">${ready ? "Liberado" : "Bloqueado"}</span></div>
+    return `<article class="loot ${ready ? "ready" : ""} ${idx === 0 ? "prio-top" : ""}">
+      <div class="loot-head"><h3 class="loot-name">${esc(item.name)}</h3>${prio}<span class="badge ${ready ? "ready" : "locked"}">${ready ? "Liberado" : "Bloqueado"}</span></div>
       <div class="costs">
         <div class="cost money ${haveMoney ? "ok" : "miss"}"><div class="k">Custo R$</div><div class="v">${fmt(item.money)}</div><div class="bar"><i style="width:${pm}%"></i></div></div>
         <div class="cost pa ${havePa ? "ok" : "miss"}"><div class="k">Custo PA</div>${ui.editPa === item.id
@@ -1584,16 +1637,17 @@
       </div>
       ${missing.length ? `<p class="hint">Para liberar: ${missing.join(" e ")}.</p>` : ""}
       ${goalLine}
+      ${prioBtns}
     </article>`;
   }
 
   function renderVitrine() {
     const goalRows = computeGoals();
-    const open = state.loot.filter((l) => !l.wonAt);
+    const open = [...state.loot.filter((l) => !l.wonAt)].sort((a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
     const won = state.loot.filter((l) => l.wonAt).sort((a, b) => b.wonAt - a.wonAt);
-    $("lootList").innerHTML = open.length ? open.map((l) => lootCard(l, goalRows)).join("") : '<div class="card"><p class="empty">Nenhuma recompensa na vitrine. Cadastre seu primeiro loot.</p></div>';
+    $("lootList").innerHTML = open.length ? open.map((l, i) => lootCard(l, goalRows, i, open.length)).join("") : '<div class="card"><p class="empty">Nenhuma recompensa na vitrine. Cadastre seu primeiro loot.</p></div>';
     $("wonTitle").hidden = !won.length;
-    $("wonList").innerHTML = won.map((l) => lootCard(l, goalRows)).join("");
+    $("wonList").innerHTML = won.map((l) => lootCard(l, goalRows, 1, 1)).join("");
     $("dotVitrine").classList.toggle("show", open.some((l) => state.money >= l.money && state.pa >= l.pa));
   }
 
@@ -1694,6 +1748,23 @@
 
     if (act === "draw-start") { startDrawnMission(id); return; }
 
+    if (act === "loot-up" || act === "loot-down") {
+      const dir = act === "loot-up" ? -1 : 1;
+      const item = findLoot(id); if (!item) return;
+      const open = state.loot.filter((l) => !l.wonAt);
+      const i = open.indexOf(item);
+      const j = i + dir;
+      if (j < 0 || j >= open.length) return;
+      const other = open[j];
+      const oi = state.loot.indexOf(other);
+      const ii = state.loot.indexOf(item);
+      const tmp = item.order ?? ii;
+      item.order = other.order ?? oi;
+      other.order = tmp;
+      save(); renderVitrine();
+      return;
+    }
+
     if (act === "set-sub") {
       e.preventDefault();
       const m = findMission(id);
@@ -1713,7 +1784,6 @@
       state.timer.mode = modeKey;
       state.timer.endsAt = Date.now() + modeMs(modeKey);
       unlockAudio();
-      if (m.col === 0) m.col = 1;
       save(); renderAll(); startTick(); showTab("moedor");
       toast(`Atacando: ${m.title} · ${mins} min no relógio.`, "gold");
       return;
@@ -1723,7 +1793,31 @@
       const m = findMission(id); if (!m) return;
       moveMissionTo(m, m.col + Number(el.dataset.dir));
       save(); renderMissoes(); renderTarget(); renderDados();
-      if (m.col === 2) { unlockAudio(); blip(); toast(`Missão concluída: ${m.title}`, "cyan"); }
+      if (m.col === 1) { unlockAudio(); blip(); toast(`Missão concluída: ${m.title}`, "cyan"); }
+      return;
+    }
+
+    if (act === "finish-now") {
+      const m = findMission(id); if (!m) return;
+      if (state.timer.targetId !== m.id || !state.timer.endsAt) return;
+      finishMissionNow();
+      return;
+    }
+
+    if (act === "sort-mission") {
+      const m = findMission(id); if (!m) return;
+      const dir = Number(el.dataset.dir);
+      const todo = state.missions.filter((x) => x.col === 0);
+      const i = todo.indexOf(m);
+      const j = i + dir;
+      if (j < 0 || j >= todo.length) return;
+      const other = todo[j];
+      const oi = state.missions.indexOf(other);
+      const mi = state.missions.indexOf(m);
+      const tmp = m.order ?? mi;
+      m.order = other.order ?? oi;
+      other.order = tmp;
+      save(); renderMissoes();
       return;
     }
 
@@ -1747,7 +1841,7 @@
       const m = findMission(id);
       const s = m && m.subs.find((x) => x.id === el.dataset.sid);
       if (!s) return;
-      s.done = true; if (m.col === 0) m.col = 1;
+      s.done = true;
       unlockAudio(); blip();
       save(); renderTarget(); renderMissoes(); renderDados();
       if (m.subs.every((x) => x.done)) toast("Todos os micropassos concluídos!", "cyan");
