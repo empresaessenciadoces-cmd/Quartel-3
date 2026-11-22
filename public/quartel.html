@@ -210,6 +210,16 @@
   .goal-actions .icon-btn { min-height: 44px; min-width: 44px; }
   .goal.done-goal { opacity: 0.75; }
 
+  /* Sorteio */
+  .draw-card { border-style: dashed; border-color: rgba(52,212,177,0.4); }
+  .draw-row { display: flex; gap: 8px; }
+  .draw-row .btn { flex: 1; }
+  .draw-pick { background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--cyan); border-radius: 12px; padding: 12px; margin-top: 12px; }
+  .draw-pick.rolling { border-left-color: var(--gold); }
+  .draw-pick .m-title { margin: 6px 0 10px; }
+  .draw-roll { font-family: var(--mono); font-size: 14px; color: var(--gold); text-align: center; padding: 8px 0; animation: pulse 0.4s ease infinite alternate; }
+  @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+
   /* Missões */
   .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
   .seg button { appearance: none; border: 0; background: transparent; color: var(--muted); border-radius: 9px; min-height: 48px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1.15; }
@@ -338,6 +348,7 @@
         </div>
         <div class="actions">
           <button class="btn btn-gold btn-xl" id="startBtn" type="button">Iniciar Missão</button>
+          <button class="btn btn-green" id="finishBtn" type="button" hidden>Concluir Agora</button>
           <button class="btn btn-danger" id="abortBtn" type="button" hidden>Abortar missão</button>
         </div>
         <p class="hint" id="timerHint">Sem limite diário. Use quantas vezes quiser.</p>
@@ -377,6 +388,17 @@
           <button type="submit" class="btn btn-gold">Lançar no quadro</button>
         </form>
       </details>
+
+      <div class="card draw-card">
+        <div class="section-row">
+          <h2 class="section-title">Missão Sorteada</h2>
+          <span class="tag-mono" id="drawDate"></span>
+        </div>
+        <div class="draw-row">
+          <button class="btn btn-cyan" type="button" data-act="draw" id="drawBtn">Sortear Missão</button>
+        </div>
+        <div id="drawPick"></div>
+      </div>
 
       <div class="seg" role="group" aria-label="Colunas do quadro" id="seg">
         <button type="button" data-col="0" aria-pressed="true"><b id="cnt0">0</b>A Fazer</button>
@@ -620,6 +642,7 @@
     timer: { endsAt: null, sessions: 0, streak: 0, best: 0, targetId: null, mode: "foco", activeSubId: null },
     history: [],
     moneyLog: [],
+    draw: { date: null, missionId: null },
     loot: [],
     missions: [],
     goals: [],
@@ -655,7 +678,7 @@
 
   function hydrate(raw) {
     if (!raw || typeof raw !== "object") return freshState();
-    return { ...structuredClone(defaults), ...raw, timer: { ...defaults.timer, ...(raw.timer || {}) } };
+    return { ...structuredClone(defaults), ...raw, timer: { ...defaults.timer, ...(raw.timer || {}) }, draw: raw.draw || { date: null, missionId: null } };
   }
   function load() {
     let s;
@@ -665,7 +688,56 @@
     return s;
   }
   let state = load();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} syncState(); };
+
+  /* Supabase: espelha o estado completo (jsonb) e as sessões do Moedor.
+     Falha silenciosa: o localStorage permanece a fonte da verdade. */
+  const SB_URL = (document.querySelector('meta[name="supabase-url"]') || {}).content || "";
+  const SB_KEY = (document.querySelector('meta[name="supabase-anon-key"]') || {}).content || "";
+  const PROFILE_ID = "default";
+  async function sbFetch(path, opts = {}) {
+    if (!SB_URL || !SB_KEY) return null;
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+        ...opts,
+        headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates", ...opts.headers }
+      });
+      if (!res.ok) return null;
+      return res.status === 201 || res.status === 200 ? res : res;
+    } catch { return null; }
+  }
+  let syncT;
+  function syncState() {
+    clearTimeout(syncT);
+    syncT = setTimeout(() => {
+      sbFetch(`app_state?profile_id=eq.${PROFILE_ID}`, { method: "POST", body: JSON.stringify({ profile_id: PROFILE_ID, data: state, updated_at: new Date().toISOString() }) });
+    }, 800);
+  }
+  async function pullState() {
+    const res = await sbFetch(`app_state?profile_id=eq.${PROFILE_ID}&select=data`);
+    if (!res) return;
+    try {
+      const rows = await res.json();
+      const remote = rows && rows[0] && rows[0].data;
+      if (!remote || typeof remote !== "object") return;
+      if (!remote.missions || typeof remote.money !== "number") return;
+      if (remote.pa === undefined) return;
+      if (state.missions.length || state.money || state.pa) {
+        if ((state.savedAt || 0) >= (remote.savedAt || 0)) return;
+      }
+      if (!confirm("Progresso encontrado na nuvem. Restaurar e substituir o progresso local?")) return;
+      stopTick();
+      state = hydrate(remote);
+      renderAll();
+      if (state.timer.endsAt) startTick();
+      toast("Progresso da nuvem restaurado.", "cyan");
+    } catch {}
+  }
+  async function mirrorSession(entry) {
+    const r = await sbFetch("focus_sessions", { method: "POST", body: JSON.stringify({ id: entry.id, mission_title: entry.mission || "", mode_label: entry.mode, mins: entry.mins, pa: entry.pa }) });
+    if (!r) return;
+  }
+  function markSaved() { state.savedAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 
   const ui = { col: 0, zone: "all", open: new Set(), editPa: null };
 
@@ -772,18 +844,50 @@
       }
       msg = m ? `Missão cumprida em "${m.title}"! +${mode.pa} PA` : mode.pa > 1 ? `${mode.label} cumprida! +${mode.pa} PA adicionados ao inventário` : "Missão cumprida! +1 PA adicionado ao inventário";
     }
-    save();
+    markSaved(); syncState();
     if (withSound) alarm();
     renderAll();
     bump($("hudPa"));
     toast(msg, "gold");
   }
 
+  /* Conclusão antecipada: concede 100% dos PA do modo e marca a missão-alvo como concluída */
+  function finishMissionNow() {
+    const t = state.timer;
+    if (!t.endsAt) return;
+    const mode = MODES[t.mode] || MODES.foco;
+    stopTick();
+    t.endsAt = null;
+    const m = t.targetId && findMission(t.targetId);
+    if (t.mode !== "descanso") {
+      t.streak += 1;
+      t.best = Math.max(t.best, t.streak);
+      t.sessions += 1;
+      state.pa += mode.pa;
+      const entry = { id: uid(), mission: m ? m.title : "", mode: mode.label, mins: mode.mins, pa: mode.pa, at: Date.now() };
+      state.history.unshift(entry);
+      state.history = state.history.slice(0, 200);
+      mirrorSession(entry);
+    }
+    let msg = `${mode.label} concluída antecipadamente! +${mode.pa} PA`;
+    if (m) {
+      m.focus = (m.focus || 0) + 1;
+      moveMissionTo(m, 2);
+      msg = `Missão concluída: "${m.title}"! +${mode.pa} PA`;
+    }
+    markSaved(); syncState();
+    alarm();
+    renderAll();
+    bump($("hudPa"));
+    toast(msg, "gold");
+  }
+  $("finishBtn").addEventListener("click", finishMissionNow);
+
   function renderTimer() {
     const t = state.timer;
     const dur = modeMs(t.mode);
     const running = !!t.endsAt;
-    const startBtn = $("startBtn"), abortBtn = $("abortBtn"), status = $("timerStatus");
+    const startBtn = $("startBtn"), abortBtn = $("abortBtn"), finishBtn = $("finishBtn"), status = $("timerStatus");
     let remaining = dur;
 
     document.querySelectorAll("#modeSeg button").forEach((b) => {
@@ -808,6 +912,8 @@
       status.textContent = "Em combate"; status.className = "status on";
       startBtn.disabled = true; startBtn.textContent = "Missão em andamento";
       abortBtn.hidden = false;
+      finishBtn.hidden = false;
+      finishBtn.textContent = t.mode === "descanso" ? "Concluir Descanso" : "Concluir Agora";
       $("timerHint").textContent = wakeLock
         ? "Tela mantida acesa. O relógio segue contando mesmo em segundo plano."
         : "Mantenha o foco. O relógio segue contando mesmo em segundo plano.";
@@ -816,6 +922,7 @@
       status.textContent = "Pronto"; status.className = "status";
       startBtn.disabled = false; startBtn.textContent = "Iniciar Missão";
       abortBtn.hidden = true;
+      finishBtn.hidden = true;
       $("timerHint").textContent = t.mode === "descanso" ? "Pausa sem recompensa. Use à vontade." : "Sem limite diário. Use quantas vezes quiser.";
       document.title = "Quartel General — Comando Pessoal";
     }
@@ -982,6 +1089,8 @@
     const list = state.missions.filter((m) => m.col === ui.col && inZone(m))
       .sort((a, b) => ui.col === 2 ? (b.doneAt || 0) - (a.doneAt || 0) : a.createdAt - b.createdAt);
 
+    renderDraw();
+
     if (!state.missions.length) {
       $("missionList").innerHTML = `<div class="card"><p class="empty">Quadro vazio. Lance sua primeira missão ou carregue um plano de exemplo com zonas da casa.</p><button class="btn btn-ghost" data-act="seed">Carregar plano de exemplo</button></div>`;
     } else if (!list.length) {
@@ -991,6 +1100,71 @@
       $("missionList").innerHTML = list.map(missionCard).join("");
     }
     $("dotMissoes").classList.toggle("show", state.missions.some((m) => m.col === 1));
+  }
+
+  /* Sorteio da missão do dia */
+  let rolling = false;
+  function renderDraw() {
+    $("drawDate").textContent = state.draw && state.draw.date === todayKey() ? "Sorteio de hoje" : "";
+    const m = state.draw && state.draw.date === todayKey() && state.draw.missionId && findMission(state.draw.missionId);
+    const box = $("drawPick");
+    if (!m) {
+      box.innerHTML = `<p class="hint" style="margin:12px 0 0">Toque em "Sortear Missão" para Sortear aleatoriamente uma missão pendente do quadro.</p>`;
+      return;
+    }
+    const total = m.subs.length, doneN = m.subs.filter((s) => s.done).length;
+    const pct = total ? (doneN / total) * 100 : 0;
+    box.innerHTML = `<div class="draw-pick">
+      <div class="m-tags"><span class="zone">${esc(m.zone || "Geral")}</span><span class="badge cyan">Sorteada</span></div>
+      <h3 class="m-title">${esc(m.title)}</h3>
+      <div class="m-meta"><span>${doneN}/${total} micropassos</span><span class="focus">${m.focus || 0} × sessões</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="draw-row" style="margin-top:10px">
+        <button class="btn btn-gold" type="button" data-act="draw-start" data-id="${m.id}">Iniciar Timer</button>
+        <button class="btn btn-ghost" type="button" data-act="draw" ${rolling ? "disabled" : ""}>Sortear Outra</button>
+      </div>
+    </div>`;
+  }
+
+  function drawCardHtml(m, animated) {
+    return `<div class="draw-pick ${animated ? "rolling" : ""}"><div class="draw-roll">${esc(m.title)}</div></div>`;
+  }
+
+  function pendingMissions(excludeId) {
+    const pend = state.missions.filter((m) => m.col !== 2 && m.id !== excludeId);
+    return pend.length ? pend : state.missions.filter((m) => m.col !== 2);
+  }
+
+  function runDraw(excludeId) {
+    if (rolling) return;
+    const pool = pendingMissions(excludeId);
+    if (!pool.length) { toast("Nenhuma missão pendente para sortear.", "red"); return; }
+    rolling = true;
+    unlockAudio();
+    const pick = () => pool[Math.floor(Math.random() * pool.length)];
+    const box = $("drawPick");
+    const iv = setInterval(() => { box.innerHTML = drawCardHtml(pick(), true); blip(); }, 130);
+    setTimeout(() => {
+      clearInterval(iv);
+      rolling = false;
+      const chosen = pick();
+      state.draw = { date: todayKey(), missionId: chosen.id };
+      markSaved(); save();
+      renderDraw();
+      toast(`Missão sorteada: ${chosen.title}`, "cyan");
+    }, 800);
+  }
+
+  function startDrawnMission(id) {
+    const m = findMission(id); if (!m) return;
+    if (state.timer.endsAt) { toast("Já há uma missão em andamento no Moedor.", "red"); return; }
+    state.timer.targetId = m.id;
+    state.timer.mode = "foco";
+    state.timer.endsAt = Date.now() + modeMs("foco");
+    unlockAudio();
+    if (m.col === 0) m.col = 1;
+    markSaved(); save(); renderAll(); startTick(); showTab("moedor");
+    toast(`Atacando: ${m.title} · 5 min no relógio.`, "gold");
   }
 
   $("missionForm").addEventListener("submit", (e) => {
@@ -1516,6 +1690,10 @@
       toast("Plano de exemplo carregado.", "cyan"); return;
     }
 
+    if (act === "draw") { runDraw(state.draw && state.draw.date === todayKey() ? state.draw.missionId : null); return; }
+
+    if (act === "draw-start") { startDrawnMission(id); return; }
+
     if (act === "set-sub") {
       e.preventDefault();
       const m = findMission(id);
@@ -1686,6 +1864,7 @@
   if (state.timer.endsAt && Date.now() >= state.timer.endsAt) completeMission(false);
   renderAll();
   if (state.timer.endsAt) startTick();
+  pullState();
 
   /* Estilos do banner e destaque de vencimento */
   const style = document.createElement("style");
